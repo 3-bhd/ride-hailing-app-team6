@@ -1,1 +1,16 @@
-<!-- TODO base.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ride App</title>
+</head>
+<body>
+    <h2>Ride Hailing App</h2>
+    <a href="{{ url_for('home') }}">Home</a> |
+    <a href="{{ url_for('passenger_register_page') }}">Passenger Register</a> |
+    <a href="{{ url_for('passenger_login_page') }}">Passenger Login</a> |
+    <a href="/driver/register">Driver Register</a> |
+    <a href="/admin/drivers">Admin</a> |
+    <hr>
+    {% block content %}{% endblock %}
+</body>
+</html>

@@ -1,1 +1,11 @@
-<!-- TODO passenger_login.html -->
+{% extends "base.html" %}
+{% block content %}
+
+<h3>Passenger Login</h3>
+<form method="POST">
+    Email: <input type="email" name="email"><br><br>
+    Password: <input type="password" name="password"><br><br>
+    <button type="submit">Login</button>
+</form>
+
+{% endblock %}
