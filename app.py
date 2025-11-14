@@ -418,15 +418,49 @@ def admin_reject(driver_id):
 # STORY 5 — DRIVER DASHBOARD + TOGGLE (PLACEHOLDER FOR TEAM)
 # ============================================================
 
-@app.route("/driver/dashboard")
+@app.route("/driver/dashboard", methods=["GET"])
 def driver_dashboard():
-    return "TODO: dashboard (TEAM PART)", 501
+    # Must be logged in as a driver
+    if "user_id" not in session or session.get("role") != "driver":
+        flash("Please log in as a driver to access your dashboard.")
+        return redirect(url_for("passenger_login_submit"))  # or your login page route
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Get the driver linked to this logged-in user
+    cursor.execute("""
+        SELECT 
+            u.name,
+            d.id              AS driver_id,
+            d.license_number,
+            d.vehicle_info,
+            d.verification_status,
+            COALESCE(d.is_online, 0) AS is_online
+        FROM drivers d
+        JOIN users u ON d.user_id = u.id
+        WHERE u.id = ?
+    """, (session["user_id"],))
+    driver = cursor.fetchone()
+    conn.close()
+
+    if driver is None:
+        flash("Driver profile not found. Please complete your registration first.")
+        return redirect(url_for("driver_register_page"))
+
+    return render_template("driver_dashboard.html", driver=driver)
 
 
 @app.route("/driver/toggle", methods=["POST"])
 def driver_toggle():
-    return "TODO: toggle (OMAR LATER)", 501
+    # This is just a safe placeholder; Omar will add the real logic.
+    if "user_id" not in session or session.get("role") != "driver":
+        flash("Please log in as a driver first.")
+        return redirect(url_for("passenger_login_submit"))
 
+    # TODO (Omar): flip is_online, store timestamps, etc.
+    flash("Online/Offline toggle backend will be implemented soon.")
+    return redirect(url_for("driver_dashboard"))
 
 # ===============================
 # RUN
