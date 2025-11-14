@@ -154,12 +154,69 @@ def logout():
 
 @app.route("/driver/register", methods=["GET"])
 def driver_register_page():
-    return "TODO: driver_register_page (TEAM PART)", 501
+    return render_template("driver_register.html")
 
 
 @app.route("/driver/register", methods=["POST"])
 def driver_register_submit():
-    return "TODO: driver_register_submit (TEAM PART)", 501
+    # --------------------
+    # Get Form Data
+    # --------------------
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+    phone = request.form.get("phone", "").strip()
+    password = request.form.get("password", "")
+    license_number = request.form.get("license_number", "").strip()
+    vehicle_info = request.form.get("vehicle_info", "").strip()
+
+    # --------------------
+    # Validation
+    # --------------------
+    if not all([name, email, phone, password, license_number, vehicle_info]):
+        return "Missing fields.", 400
+
+    if not password_strong(password):
+        return "Weak password. Must be ≥8 chars, digit + symbol.", 400
+
+    if email_or_phone_exists(email, phone):
+        return "Email or phone already registered.", 400
+
+    pw_hash = generate_password_hash(password)
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # --------------------
+    # Insert into users table
+    # --------------------
+    cursor.execute("""
+        INSERT INTO users (name, email, phone, password_hash, role)
+        VALUES (?, ?, ?, ?, 'driver')
+    """, (name, email, phone, pw_hash))
+
+    conn.commit()
+    user_id = cursor.lastrowid
+
+    # --------------------
+    # Insert into drivers table
+    # --------------------
+    cursor.execute("""
+        INSERT INTO drivers (user_id, license_number, vehicle_info, verification_status)
+        VALUES (?, ?, ?, 'pending')
+    """, (user_id, license_number, vehicle_info))
+
+    conn.commit()
+    conn.close()
+
+    # --------------------
+    # Log in driver immediately (no admin flow)
+    # --------------------
+    session["user_id"] = user_id
+    session["role"] = "driver"
+
+    return redirect("/driver/dashboard")
+
+
 
 
 # ============================================================
