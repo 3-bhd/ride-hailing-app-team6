@@ -1,1 +1,104 @@
-<!-- TODO admin_drivers.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - Driver Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .driver-card { border: 1px solid #ddd; padding: 20px; margin: 15px 0; border-radius: 8px; }
+        .driver-info { margin-bottom: 15px; }
+        .documents a { display: block; margin: 5px 0; color: #007bff; text-decoration: none; }
+        .documents a:hover { text-decoration: underline; }
+        .actions { margin-top: 15px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        .btn-approve { background: #28a745; color: white; }
+        .btn-reject { background: #dc3545; color: white; }
+        .status-pending { color: #ffc107; font-weight: bold; }
+        .status-approved { color: #28a745; font-weight: bold; }
+        .status-rejected { color: #dc3545; font-weight: bold; }
+        .empty-state { text-align: center; padding: 40px; color: #666; }
+    </style>
+</head>
+<body>
+<h1>Driver Management</h1>
+<p><a href="/">Back to Home</a></p>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div style="color: green; margin: 15px 0;">
+    {% for message in messages %}
+    <p>{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<h2>Pending Drivers ({{ pending_drivers|length }})</h2>
+
+{% if pending_drivers %}
+{% for driver in pending_drivers %}
+<div class="driver-card">
+    <div class="driver-info">
+        <h3>{{ driver.name }}</h3>
+        <p><strong>Email:</strong> {{ driver.email }}</p>
+        <p><strong>Phone:</strong> {{ driver.phone }}</p>
+        <p><strong>License Number:</strong> {{ driver.license_number }}</p>
+        <p><strong>Vehicle Info:</strong> {{ driver.vehicle_info }}</p>
+        <p><strong>Status:</strong> <span class="status-pending">Pending</span></p>
+    </div>
+
+    <div class="documents">
+        <strong>Documents:</strong>
+        <a href="{{ url_for('serve_uploaded_file', filename=driver.id_doc_path) }}" target="_blank">ID Document</a>
+        <a href="{{ url_for('serve_uploaded_file', filename=driver.license_doc_path) }}" target="_blank">License Document</a>
+        <a href="{{ url_for('serve_uploaded_file', filename=driver.vehicle_doc_path) }}" target="_blank">Vehicle Document</a>
+    </div>
+
+    <div class="actions">
+        <form action="{{ url_for('admin_approve', driver_id=driver.driver_id) }}" method="POST" style="display: inline;">
+            <button type="submit" class="btn btn-approve">Approve</button>
+        </form>
+        <form action="{{ url_for('admin_reject', driver_id=driver.driver_id) }}" method="POST" style="display: inline;">
+            <button type="submit" class="btn btn-reject">Reject</button>
+        </form>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="empty-state">
+    <p>No pending drivers for approval.</p>
+</div>
+{% endif %}
+
+{% if approved_drivers %}
+<h2>Approved Drivers ({{ approved_drivers|length }})</h2>
+{% for driver in approved_drivers %}
+<div class="driver-card">
+    <div class="driver-info">
+        <h3>{{ driver.name }}</h3>
+        <p><strong>Email:</strong> {{ driver.email }}</p>
+        <p><strong>Phone:</strong> {{ driver.phone }}</p>
+        <p><strong>License Number:</strong> {{ driver.license_number }}</p>
+        <p><strong>Vehicle Info:</strong> {{ driver.vehicle_info }}</p>
+        <p><strong>Status:</strong> <span class="status-approved">Approved</span></p>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if rejected_drivers %}
+<h2>Rejected Drivers ({{ rejected_drivers|length }})</h2>
+{% for driver in rejected_drivers %}
+<div class="driver-card">
+    <div class="driver-info">
+        <h3>{{ driver.name }}</h3>
+        <p><strong>Email:</strong> {{ driver.email }}</p>
+        <p><strong>Phone:</strong> {{ driver.phone }}</p>
+        <p><strong>License Number:</strong> {{ driver.license_number }}</p>
+        <p><strong>Vehicle Info:</strong> {{ driver.vehicle_info }}</p>
+        <p><strong>Status:</strong> <span class="status-rejected">Rejected</span></p>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+</body>
+</html>
