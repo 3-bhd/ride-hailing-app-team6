@@ -1,11 +1,22 @@
 {% extends "base.html" %}
+
+{% block title %}Passenger Login | U-Ride{% endblock %}
+
 {% block content %}
+<div class="card">
+    <h2 class="card-title">Passenger Login</h2>
+    <form method="POST" class="form">
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input id="email" type="email" name="email" required>
+        </div>
 
-<h3>Passenger Login</h3>
-<form method="POST">
-    Email: <input type="email" name="email"><br><br>
-    Password: <input type="password" name="password"><br><br>
-    <button type="submit">Login</button>
-</form>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input id="password" type="password" name="password" required>
+        </div>
 
+        <button type="submit" class="btn btn-primary">Login</button>
+    </form>
+</div>
 {% endblock %}
