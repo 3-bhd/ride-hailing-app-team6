@@ -1,1 +1,39 @@
-<!-- TODO driver_dashboard.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h2>Driver Dashboard</h2>
+
+    <div class="driver-info">
+        <p><strong>Name:</strong> {{ driver.name }}</p>
+        <p><strong>License:</strong> {{ driver.license_number }}</p>
+        <p><strong>Vehicle:</strong> {{ driver.vehicle_info }}</p>
+        <p><strong>Verification Status:</strong> {{ driver.verification_status }}</p>
+        <p><strong>Current Status:</strong>
+            {% if driver.is_online %}
+                Online
+            {% else %}
+                Offline
+            {% endif %}
+        </p>
+    </div>
+
+    {% if driver.verification_status == "approved" %}
+        <form method="POST" action="{{ url_for('driver_toggle') }}" class="toggle-form">
+            <button type="submit">
+                {% if driver.is_online %}
+                    Go Offline
+                {% else %}
+                    Go Online
+                {% endif %}
+            </button>
+        </form>
+    {% else %}
+        <p class="warning">
+            You cannot go online until an admin approves your account.
+        </p>
+    {% endif %}
+
+    <p><a href="{{ url_for('logout') }}">Logout</a></p>
+</div>
+{% endblock %}
