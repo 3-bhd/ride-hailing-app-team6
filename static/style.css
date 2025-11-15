@@ -148,3 +148,50 @@ input:focus {
     font-size: 0.8rem;
     color: #6b7280;
 }
+
+.driver-dashboard {
+    margin-top: 1rem;
+}
+
+.card-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.status-pill {
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-online {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-offline {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.driver-info p {
+    font-size: 0.95rem;
+    margin-bottom: 0.35rem;
+}
+
+.toggle-form {
+    margin-top: 1.25rem;
+}
+
+.warning {
+    margin-top: 1.25rem;
+    padding: 0.8rem 1rem;
+    border-radius: 0.5rem;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    font-size: 0.9rem;
+}

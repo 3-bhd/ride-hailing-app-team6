@@ -5,6 +5,17 @@
 {% block content %}
 <div class="card">
     <h2 class="card-title">Passenger Registration</h2>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div class="flash flash-error">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
     <form method="POST" class="form">
         <div class="form-group">
             <label for="name">Full Name</label>

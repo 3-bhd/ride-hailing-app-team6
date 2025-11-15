@@ -118,6 +118,11 @@ def home():
 def serve_uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("You have been logged out.")
+    return redirect(url_for("home"))
 
 # ============================================================
 # STORY 1 — PASSENGER REGISTRATION & LOGIN (YOUR PART)
@@ -135,14 +140,20 @@ def passenger_register_submit():
     phone = request.form.get("phone", "").strip()
     password = request.form.get("password", "")
 
-    if not name or not email or not phone or not password:
-        return "Missing fields.", 400
+    # Validate required fields
+    if not all([name, email, phone, password]):
+        flash("All fields are required.")
+        return redirect(url_for("passenger_register_page"))
 
+    # Password strength
     if not password_strong(password):
-        return "Weak password. Must be >=8 chars, digit + symbol.", 400
+        flash("Weak password. Password must be at least 8 characters and include a digit and a symbol.")
+        return redirect(url_for("passenger_register_page"))
 
+    # Unique email / phone
     if email_or_phone_exists(email, phone):
-        return "Email or phone already registered.", 400
+        flash("Email or phone number already registered.")
+        return redirect(url_for("passenger_register_page"))
 
     pw_hash = generate_password_hash(password)
 
@@ -163,6 +174,7 @@ def passenger_register_submit():
     return redirect(url_for("home"))
 
 
+
 @app.route("/passenger/login", methods=["GET"])
 def passenger_login_page():
     return render_template("passenger_login.html")
@@ -170,8 +182,8 @@ def passenger_login_page():
 
 @app.route("/passenger/login", methods=["POST"])
 def passenger_login_submit():
-    email = request.form.get("email").strip().lower()
-    password = request.form.get("password")
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
 
     conn = get_db()
     cursor = conn.cursor()
@@ -181,24 +193,23 @@ def passenger_login_submit():
     user = cursor.fetchone()
     conn.close()
 
-    if user is None:
-        return "Invalid credentials.", 400
+    # Invalid email or password
+    if user is None or not check_password_hash(user["password_hash"], password):
+        flash("Invalid email or password.")
+        return redirect(url_for("passenger_login_page"))
 
-    if not check_password_hash(user["password_hash"], password):
-        return "Invalid credentials.", 400
-
+    # Save session
     session["user_id"] = user["id"]
     session["role"] = user["role"]
 
+    # Redirect by role
     if user["role"] == "admin":
-        return redirect("/admin/drivers")
-    return redirect("/")
+        return redirect(url_for("admin_drivers_list"))
+    elif user["role"] == "driver":
+        return redirect(url_for("driver_dashboard"))
+    else:  # passenger or anything else
+        return redirect(url_for("home"))
 
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/")
 
 
 # ============================================================
@@ -423,7 +434,7 @@ def driver_dashboard():
     # Must be logged in as a driver
     if "user_id" not in session or session.get("role") != "driver":
         flash("Please log in as a driver to access your dashboard.")
-        return redirect(url_for("passenger_login_submit"))  # or your login page route
+        return redirect(url_for("passenger_login_page"))
 
     conn = get_db()
     cursor = conn.cursor()
@@ -436,11 +447,13 @@ def driver_dashboard():
             d.license_number,
             d.vehicle_info,
             d.verification_status,
-            COALESCE(d.is_online, 0) AS is_online
+            COALESCE(ds.is_online, 0) AS is_online
         FROM drivers d
         JOIN users u ON d.user_id = u.id
+        LEFT JOIN driver_status ds ON ds.driver_id = d.id
         WHERE u.id = ?
     """, (session["user_id"],))
+
     driver = cursor.fetchone()
     conn.close()
 
@@ -453,13 +466,63 @@ def driver_dashboard():
 
 @app.route("/driver/toggle", methods=["POST"])
 def driver_toggle():
-    # This is just a safe placeholder; Omar will add the real logic.
+    # Must be logged in as a driver
     if "user_id" not in session or session.get("role") != "driver":
-        flash("Please log in as a driver first.")
-        return redirect(url_for("passenger_login_submit"))
+        flash("Please log in as a driver to change your status.")
+        return redirect(url_for("passenger_login_page"))
 
-    # TODO (Omar): flip is_online, store timestamps, etc.
-    flash("Online/Offline toggle backend will be implemented soon.")
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Get driver row + current status
+    cursor.execute("""
+        SELECT 
+            d.id AS driver_id,
+            d.verification_status,
+            COALESCE(ds.is_online, 0) AS is_online
+        FROM drivers d
+        JOIN users u ON d.user_id = u.id
+        LEFT JOIN driver_status ds ON ds.driver_id = d.id
+        WHERE u.id = ?
+    """, (session["user_id"],))
+    row = cursor.fetchone()
+
+    if row is None:
+        conn.close()
+        flash("Driver profile not found. Please complete your registration first.")
+        return redirect(url_for("driver_register_page"))
+
+    # Must be approved before toggling
+    if row["verification_status"] != "approved":
+        conn.close()
+        flash("You must be approved by an admin before going online.")
+        return redirect(url_for("driver_dashboard"))
+
+    driver_id = row["driver_id"]
+    current_online = row["is_online"] or 0
+    new_online = 0 if current_online else 1
+
+    # Ensure a driver_status row exists, then update or insert
+    cursor.execute("SELECT id FROM driver_status WHERE driver_id = ?", (driver_id,))
+    status_row = cursor.fetchone()
+
+    if status_row is None:
+        cursor.execute("""
+            INSERT INTO driver_status (driver_id, is_online, last_change)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+        """, (driver_id, new_online))
+    else:
+        cursor.execute("""
+            UPDATE driver_status
+               SET is_online = ?,
+                   last_change = CURRENT_TIMESTAMP
+             WHERE driver_id = ?
+        """, (new_online, driver_id))
+
+    conn.commit()
+    conn.close()
+
+    flash(f"You are now {'Online' if new_online else 'Offline'}.")
     return redirect(url_for("driver_dashboard"))
 
 # ===============================

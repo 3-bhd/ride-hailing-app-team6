@@ -1,26 +1,48 @@
 {% extends "base.html" %}
 
+{% block title %}Driver Dashboard | U-Ride{% endblock %}
+
 {% block content %}
-<div class="dashboard-container">
-    <h2>Driver Dashboard</h2>
+<div class="card driver-dashboard">
+    <div class="card-header-row">
+        <h2 class="card-title">Driver Dashboard</h2>
+        <span class="status-pill {% if driver.is_online %}status-online{% else %}status-offline{% endif %}">
+            {% if driver.is_online %}Online{% else %}Offline{% endif %}
+        </span>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div class="flash flash-success">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
 
     <div class="driver-info">
         <p><strong>Name:</strong> {{ driver.name }}</p>
         <p><strong>License:</strong> {{ driver.license_number }}</p>
         <p><strong>Vehicle:</strong> {{ driver.vehicle_info }}</p>
-        <p><strong>Verification Status:</strong> {{ driver.verification_status }}</p>
-        <p><strong>Current Status:</strong>
-            {% if driver.is_online %}
-                Online
-            {% else %}
-                Offline
-            {% endif %}
+        <p>
+            <strong>Verification Status:</strong>
+            <span class="badge
+                {% if driver.verification_status == 'approved' %}badge-approved
+                {% elif driver.verification_status == 'rejected' %}badge-rejected
+                {% else %}badge-pending
+                {% endif %}
+            ">
+                {{ driver.verification_status | capitalize }}
+            </span>
         </p>
     </div>
 
     {% if driver.verification_status == "approved" %}
-        <form method="POST" action="{{ url_for('driver_toggle') }}" class="toggle-form">
-            <button type="submit">
+        <form method="POST"
+              action="{{ url_for('driver_toggle') }}"
+              class="toggle-form">
+            <button type="submit" class="btn btn-primary">
                 {% if driver.is_online %}
                     Go Offline
                 {% else %}
@@ -33,7 +55,5 @@
             You cannot go online until an admin approves your account.
         </p>
     {% endif %}
-
-    <p><a href="{{ url_for('logout') }}">Logout</a></p>
 </div>
 {% endblock %}
