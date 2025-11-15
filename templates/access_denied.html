@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied | U-Ride{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 class="card-title">Access Denied</h2>
+
+    <p style="font-size: 0.95rem; margin-bottom: 0.75rem;">
+        You do not have permission to view this page.
+    </p>
+
+    <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 1.25rem;">
+        Only <strong>admin users</strong> can access the admin dashboard and manage driver approvals.
+        If you believe this is a mistake, please log in with an admin account.
+    </p>
+
+    <div class="hero-actions">
+        <a href="{{ url_for('passenger_login_page') }}" class="btn btn-primary">
+            Go to Login
+        </a>
+        <a href="{{ url_for('home') }}" class="btn btn-secondary">
+            Back to Home
+        </a>
+    </div>
+</div>
+{% endblock %}

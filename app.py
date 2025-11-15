@@ -323,17 +323,24 @@ def driver_register_submit():
 
 @app.route("/admin/drivers", methods=["GET"])
 def admin_drivers_list():
-    # Check if user is admin
+    # Only admins can access this page
     if session.get("role") != "admin":
-        return "Access denied. Admin privileges required.", 403
+        return render_template("access_denied.html"), 403
 
     conn = get_db()
     cursor = conn.cursor()
 
-    # Get pending drivers
+    # Pending drivers
     cursor.execute("""
-        SELECT d.id as driver_id, u.name, u.email, u.phone, d.license_number, 
-               d.vehicle_info, d.id_doc_path, d.license_doc_path, d.vehicle_doc_path,
+        SELECT d.id as driver_id,
+               u.name,
+               u.email,
+               u.phone,
+               d.license_number,
+               d.vehicle_info,
+               d.id_doc_path,
+               d.license_doc_path,
+               d.vehicle_doc_path,
                d.verification_status
         FROM drivers d
         JOIN users u ON d.user_id = u.id
@@ -341,20 +348,30 @@ def admin_drivers_list():
     """)
     pending_drivers = cursor.fetchall()
 
-    # Get approved drivers
+    # Approved drivers
     cursor.execute("""
-        SELECT d.id as driver_id, u.name, u.email, u.phone, d.license_number, 
-               d.vehicle_info, d.verification_status
+        SELECT d.id as driver_id,
+               u.name,
+               u.email,
+               u.phone,
+               d.license_number,
+               d.vehicle_info,
+               d.verification_status
         FROM drivers d
         JOIN users u ON d.user_id = u.id
         WHERE d.verification_status = 'approved'
     """)
     approved_drivers = cursor.fetchall()
 
-    # Get rejected drivers
+    # Rejected drivers
     cursor.execute("""
-        SELECT d.id as driver_id, u.name, u.email, u.phone, d.license_number, 
-               d.vehicle_info, d.verification_status
+        SELECT d.id as driver_id,
+               u.name,
+               u.email,
+               u.phone,
+               d.license_number,
+               d.vehicle_info,
+               d.verification_status
         FROM drivers d
         JOIN users u ON d.user_id = u.id
         WHERE d.verification_status = 'rejected'
@@ -363,16 +380,18 @@ def admin_drivers_list():
 
     conn.close()
 
-    return render_template("admin_drivers.html",
-                           pending_drivers=pending_drivers,
-                           approved_drivers=approved_drivers,
-                           rejected_drivers=rejected_drivers)
+    return render_template(
+        "admin_drivers.html",
+        pending_drivers=pending_drivers,
+        approved_drivers=approved_drivers,
+        rejected_drivers=rejected_drivers,
+    )
 
 
 @app.route("/admin/drivers/<int:driver_id>/approve", methods=["POST"])
 def admin_approve(driver_id):
     if session.get("role") != "admin":
-        return "Access denied.", 403
+        return render_template("access_denied.html"), 403
 
     conn = get_db()
     cursor = conn.cursor()
@@ -380,27 +399,24 @@ def admin_approve(driver_id):
     try:
         cursor.execute("""
             UPDATE drivers 
-            SET verification_status = 'approved' 
-            WHERE id = ?
+               SET verification_status = 'approved' 
+             WHERE id = ?
         """, (driver_id,))
-
         conn.commit()
-        flash(f"Driver #{driver_id} has been approved successfully!")
-
+        flash(f"Driver #{driver_id} has been approved.")
     except Exception as e:
         conn.rollback()
         flash(f"Error approving driver: {str(e)}")
-
     finally:
         conn.close()
 
-    return redirect("/admin/drivers")
+    return redirect(url_for("admin_drivers_list"))
 
 
 @app.route("/admin/drivers/<int:driver_id>/reject", methods=["POST"])
 def admin_reject(driver_id):
     if session.get("role") != "admin":
-        return "Access denied.", 403
+        return render_template("access_denied.html"), 403
 
     conn = get_db()
     cursor = conn.cursor()
@@ -408,21 +424,18 @@ def admin_reject(driver_id):
     try:
         cursor.execute("""
             UPDATE drivers 
-            SET verification_status = 'rejected' 
-            WHERE id = ?
+               SET verification_status = 'rejected' 
+             WHERE id = ?
         """, (driver_id,))
-
         conn.commit()
         flash(f"Driver #{driver_id} has been rejected.")
-
     except Exception as e:
         conn.rollback()
         flash(f"Error rejecting driver: {str(e)}")
-
     finally:
         conn.close()
 
-    return redirect("/admin/drivers")
+    return redirect(url_for("admin_drivers_list"))
 
 
 # ============================================================
