@@ -20,16 +20,36 @@
         </p>
 
         <div class="hero-actions">
-            <a href="{{ url_for('passenger_register_page') }}" class="btn btn-primary">
-                Get a Ride
-            </a>
-            <a href="{{ url_for('driver_register_page') }}" class="btn btn-secondary">
-                Drive with U-Ride
-            </a>
-            <a href="{{ url_for('passenger_login_page') }}" class="hero-link">
-                Already have an account? Login
-            </a>
+            {# Get a Ride button #}
+            {% if session.get('role') == 'passenger' %}
+                <a href="{{ url_for('passenger_dashboard') }}" class="btn btn-primary">
+                    Get a Ride
+                </a>
+            {% else %}
+                <a href="{{ url_for('passenger_register_page') }}" class="btn btn-primary">
+                    Get a Ride
+                </a>
+            {% endif %}
+
+            {# Drive with U-Ride button #}
+            {% if session.get('role') == 'driver' %}
+                <a href="{{ url_for('driver_dashboard') }}" class="btn btn-secondary">
+                    Drive with U-Ride
+                </a>
+            {% else %}
+                <a href="{{ url_for('driver_register_page') }}" class="btn btn-secondary">
+                    Drive with U-Ride
+                </a>
+            {% endif %}
+
+            {# Login link – only if not logged in #}
+            {% if not session.get('user_id') %}
+                <a href="{{ url_for('passenger_login_page') }}" class="hero-link">
+                    Already have an account? Login
+                </a>
+            {% endif %}
         </div>
+
     </div>
 
     <div class="hero-side">
