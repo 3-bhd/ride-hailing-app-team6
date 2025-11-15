@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Passenger Dashboard | U-Ride{% endblock %}
+
+{% block content %}
+<div class="card passenger-dashboard">
+    <h2 class="card-title">Passenger Dashboard</h2>
+
+    {% if passenger %}
+        <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 0.75rem;">
+            Logged in as <strong>{{ passenger.name }}</strong> ({{ passenger.email }})
+        </p>
+    {% endif %}
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div class="flash flash-success">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">Request a Ride</h3>
+
+    <form method="POST" class="form">
+        <div class="form-group">
+            <label for="pickup">Pickup Location</label>
+            <input id="pickup" type="text" name="pickup"
+                   placeholder="e.g., AUC Main Gate" required>
+        </div>
+
+        <div class="form-group">
+            <label for="destination">Destination</label>
+            <input id="destination" type="text" name="destination"
+                   placeholder="e.g., Zamalek" required>
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes (optional)</label>
+            <input id="notes" type="text" name="notes"
+                   placeholder="e.g., I have 2 bags">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit Request</button>
+    </form>
+
+    <p style="font-size: 0.8rem; color: #6b7280; margin-top: 0.75rem;">
+        * For this sprint, ride requests are not yet matched with drivers.
+        This page demonstrates the passenger flow after login.
+    </p>
+</div>
+{% endblock %}

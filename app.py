@@ -198,7 +198,7 @@ def passenger_login_submit():
         flash("Invalid email or password.")
         return redirect(url_for("passenger_login_page"))
 
-    # Save session
+        # Save session
     session["user_id"] = user["id"]
     session["role"] = user["role"]
 
@@ -207,9 +207,37 @@ def passenger_login_submit():
         return redirect(url_for("admin_drivers_list"))
     elif user["role"] == "driver":
         return redirect(url_for("driver_dashboard"))
-    else:  # passenger or anything else
-        return redirect(url_for("home"))
+    else:  # passenger
+        return redirect(url_for("passenger_dashboard"))
 
+
+@app.route("/passenger/dashboard", methods=["GET", "POST"])
+def passenger_dashboard():
+    # Must be logged in as a passenger
+    if "user_id" not in session or session.get("role") != "passenger":
+        flash("Please log in as a passenger to access your dashboard.")
+        return redirect(url_for("passenger_login_page"))
+
+    if request.method == "POST":
+        pickup = request.form.get("pickup", "").strip()
+        destination = request.form.get("destination", "").strip()
+        notes = request.form.get("notes", "").strip()
+
+        if not pickup or not destination:
+            flash("Please enter both pickup and destination.")
+        else:
+            # For Sprint 1, we just simulate a ride request.
+            # In a future sprint, this would insert into a rides table.
+            flash("Ride request submitted! (Feature to be completed in next sprint.)")
+
+    # Get passenger info
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, email FROM users WHERE id = ?", (session["user_id"],))
+    passenger = cursor.fetchone()
+    conn.close()
+
+    return render_template("passenger_dashboard.html", passenger=passenger)
 
 
 # ============================================================
