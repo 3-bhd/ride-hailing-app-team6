@@ -14,10 +14,10 @@
             </div>
             <div class="nav-links">
                 <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('passenger_login_page') }}">Login</a>
                 <a href="{{ url_for('passenger_register_page') }}">Passenger Register</a>
-                <a href="{{ url_for('passenger_login_page') }}">Passenger Login</a>
-                <a href="/driver/register">Driver Register</a>
-                <a href="/admin/drivers">Admin</a>
+                <a href="{{ url_for('driver_register_page') }}">Driver Register</a>
+                <a href="{{ url_for('admin_drivers_list') }}">Admin</a>
                 {% if session.get('user_id') %}
                     <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
                 {% endif %}
@@ -32,7 +32,7 @@
     </main>
 
     <footer class="footer">
-        <small>© 2025 U-Ride – Sprint 1 MVP</small>
+        <small>© 2025 U-Ride – Ride Hailing Management System</small>
     </footer>
 </body>
 </html>

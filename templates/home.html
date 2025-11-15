@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}U-Ride | Ride Hailing System{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="hero-main">
+        <div class="hero-badge">
+            <span>New</span> Sprint 1 MVP • RHMS
+        </div>
+
+        <h1 class="hero-title">
+            Manage rides, drivers, and approvals<br>
+            in one simple dashboard.
+        </h1>
+
+        <p class="hero-text">
+            U-Ride is a ride-hailing management system where passengers sign up to request rides,
+            drivers register and upload documents, and admins verify and control who goes online.
+        </p>
+
+        <div class="hero-actions">
+            <a href="{{ url_for('passenger_register_page') }}" class="btn btn-primary">
+                Get a Ride
+            </a>
+            <a href="{{ url_for('driver_register_page') }}" class="btn btn-secondary">
+                Drive with U-Ride
+            </a>
+            <a href="{{ url_for('passenger_login_page') }}" class="hero-link">
+                Already have an account? Login
+            </a>
+        </div>
+    </div>
+
+    <div class="hero-side">
+        <div class="hero-card">
+            <h3>Live Status Preview</h3>
+            <ul>
+                <li>✅ Passengers register & login</li>
+                <li>✅ Drivers register with documents</li>
+                <li>✅ Admins approve / reject drivers</li>
+                <li>✅ Approved drivers toggle <strong>Online / Offline</strong></li>
+            </ul>
+        </div>
+
+        <div class="hero-stats">
+            <div class="stat">
+                <div class="stat-number">3</div>
+                <div class="stat-label">User Roles</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">1</div>
+                <div class="stat-label">Unified Login</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">✔</div>
+                <div class="stat-label">Sprint 1 Ready</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

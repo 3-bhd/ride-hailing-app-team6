@@ -110,7 +110,7 @@ def save_uploaded_file(file, folder):
 # ===============================
 @app.route("/")
 def home():
-    return render_template("base.html")
+    return render_template("home.html")
 
 
 # Route to serve uploaded files
