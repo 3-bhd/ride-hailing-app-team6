@@ -591,91 +591,123 @@ def driver_dashboard():
     conn = get_db()
     cursor = conn.cursor()
 
-    # Get the driver linked to this logged-in user
+    # Load driver
     cursor.execute("""
-                   SELECT
-                       u.name,
-                       d.id              AS driver_id,
-                       d.license_number,
-                       d.vehicle_info,
-                       d.verification_status,
-                       COALESCE(ds.is_online, 0) AS is_online
-                   FROM drivers d
-                            JOIN users u ON d.user_id = u.id
-                            LEFT JOIN driver_status ds ON ds.driver_id = d.id
-                   WHERE u.id = ?
-                   """, (session["user_id"],))
+        SELECT
+            u.name,
+            d.id AS driver_id,
+            d.license_number,
+            d.vehicle_info,
+            d.verification_status,
+            COALESCE(ds.is_online, 0) AS is_online
+        FROM drivers d
+        JOIN users u ON d.user_id = u.id
+        LEFT JOIN driver_status ds ON ds.driver_id = d.id
+        WHERE u.id = ?
+    """, (session["user_id"],))
 
     driver = cursor.fetchone()
-    conn.close()
 
     if driver is None:
-        flash("Driver profile not found. Please complete your registration first.")
+        conn.close()
+        flash("Driver profile not found. Please complete registration.")
         return redirect(url_for("driver_register_page"))
 
-    return render_template("driver_dashboard.html", driver=driver)
+    # Load ALL ride requests with status = waiting (assigned to any online driver)
+    cursor.execute("""
+        SELECT 
+            id,
+            pickup_address,
+            dropoff_address,
+            created_at
+        FROM rides
+        WHERE status = 'waiting'
+        ORDER BY created_at ASC
+    """)
 
+    ride_requests = cursor.fetchall()
+    conn.close()
 
-@app.route("/driver/toggle", methods=["POST"])
-def driver_toggle():
-    # Must be logged in as a driver
+    return render_template(
+        "driver_dashboard.html",
+        driver=driver,
+        ride_requests=ride_requests
+    )
+
+@app.route("/driver/rides/<int:ride_id>/accept", methods=["POST"])
+def driver_accept_ride(ride_id):
     if "user_id" not in session or session.get("role") != "driver":
-        flash("Please log in as a driver to change your status.")
+        flash("Please log in as a driver.")
         return redirect(url_for("passenger_login_page"))
 
     conn = get_db()
     cursor = conn.cursor()
 
-    # Get driver row + current status
-    cursor.execute("""
-                   SELECT
-                       d.id AS driver_id,
-                       d.verification_status,
-                       COALESCE(ds.is_online, 0) AS is_online
-                   FROM drivers d
-                            JOIN users u ON d.user_id = u.id
-                            LEFT JOIN driver_status ds ON ds.driver_id = d.id
-                   WHERE u.id = ?
-                   """, (session["user_id"],))
+    # Check ride still exists & is waiting
+    cursor.execute("SELECT status FROM rides WHERE id = ?", (ride_id,))
     row = cursor.fetchone()
 
-    if row is None:
+    if not row:
         conn.close()
-        flash("Driver profile not found. Please complete your registration first.")
-        return redirect(url_for("driver_register_page"))
-
-    # Must be approved before toggling
-    if row["verification_status"] != "approved":
-        conn.close()
-        flash("You must be approved by an admin before going online.")
+        flash("Ride not found.")
         return redirect(url_for("driver_dashboard"))
 
-    driver_id = row["driver_id"]
-    current_online = row["is_online"] or 0
-    new_online = 0 if current_online else 1
+    if row["status"] != "waiting":
+        conn.close()
+        flash("Ride has already been taken.")
+        return redirect(url_for("driver_dashboard"))
 
-    # Ensure a driver_status row exists, then update or insert
-    cursor.execute("SELECT id FROM driver_status WHERE driver_id = ?", (driver_id,))
-    status_row = cursor.fetchone()
-
-    if status_row is None:
-        cursor.execute("""
-                       INSERT INTO driver_status (driver_id, is_online, last_change)
-                       VALUES (?, ?, CURRENT_TIMESTAMP)
-                       """, (driver_id, new_online))
-    else:
-        cursor.execute("""
-                       UPDATE driver_status
-                       SET is_online = ?,
-                           last_change = CURRENT_TIMESTAMP
-                       WHERE driver_id = ?
-                       """, (new_online, driver_id))
-
+    # Mark as accepted
+    cursor.execute(
+        "UPDATE rides SET status = 'accepted' WHERE id = ?",
+        (ride_id,)
+    )
     conn.commit()
     conn.close()
 
-    flash(f"You are now {'Online' if new_online else 'Offline'}.")
+    flash(f"Ride #{ride_id} accepted successfully.")
     return redirect(url_for("driver_dashboard"))
+
+
+
+@app.route("/driver/rides/<int:ride_id>/reject", methods=["POST"])
+def driver_reject_ride(ride_id):
+    if "user_id" not in session or session.get("role") != "driver":
+        flash("Please log in as a driver.")
+        return redirect(url_for("passenger_login_page"))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT status FROM rides WHERE id = ?", (ride_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        flash("Ride not found.")
+        return redirect(url_for("driver_dashboard"))
+
+    if row["status"] != "waiting":
+        conn.close()
+        flash("Ride is no longer available.")
+        return redirect(url_for("driver_dashboard"))
+
+    # Mark as rejected
+    cursor.execute(
+        "UPDATE rides SET status = 'rejected' WHERE id = ?",
+        (ride_id,)
+    )
+    conn.commit()
+    conn.close()
+
+    flash(f"Ride #{ride_id} rejected.")
+    return redirect(url_for("driver_dashboard"))
+
+
+@app.route("/driver/requests", methods=["GET"])
+def driver_requests():
+    return redirect(url_for("driver_dashboard"))
+
 
 # ===============================
 # RUN
