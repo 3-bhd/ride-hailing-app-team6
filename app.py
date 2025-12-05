@@ -294,12 +294,12 @@ def fare_estimate(ride_id):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-                   SELECT r.*, u.name as passenger_name
-                   FROM rides r
-                            JOIN users u ON r.passenger_id = u.id
-                   WHERE r.id = ? AND r.passenger_id = ?
-                   """, (ride_id, session["user_id"]))
-
+        SELECT r.*, u.name as passenger_name
+        FROM rides r
+        JOIN users u ON r.passenger_id = u.id
+        WHERE r.id = ? AND r.passenger_id = ?
+    """, (ride_id, session["user_id"]))
+    
     ride = cursor.fetchone()
     conn.close()
 
@@ -307,47 +307,16 @@ def fare_estimate(ride_id):
         flash("Ride not found.")
         return redirect(url_for("passenger_dashboard"))
 
-    # For Task 1, just show a simple message
-    # Task 2 will implement proper fare calculation
-    return render_template("fare_estimate.html",
-                           ride=ride,
-                           fare_estimate="To be calculated in Task 2")
-
-
-@app.route("/estimate-fare/<int:ride_id>")
-def estimate_fare(ride_id):
-    # Must be logged in as a passenger
-    if "user_id" not in session or session.get("role") != "passenger":
-        flash("Please log in as a passenger.")
-        return redirect(url_for("passenger_login_page"))
-
-    # Get ride from database
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-                   SELECT r.*, u.name as passenger_name
-                   FROM rides r
-                            JOIN users u ON r.passenger_id = u.id
-                   WHERE r.id = ? AND r.passenger_id = ?
-                   """, (ride_id, session["user_id"]))
-
-    ride = cursor.fetchone()
-    conn.close()
-
-    if not ride:
-        flash("Ride not found.")
-        return redirect(url_for("passenger_dashboard"))
-
-    # Calculate fake distance and duration (Task 2 logic)
+    # Calculate fake distance and duration
     import random
     import math
-
-    # Generate random but realistic distance based on lat/lng
+    
+    # Generate realistic distance based on lat/lng if available
     if ride["pickup_lat"] and ride["dropoff_lat"]:
         # Simple haversine formula approximation
         lat1, lon1 = float(ride["pickup_lat"]), float(ride["pickup_lng"])
         lat2, lon2 = float(ride["dropoff_lat"]), float(ride["dropoff_lng"])
-
+        
         # Approximate distance in km
         dlat = math.radians(lat2 - lat1)
         dlon = math.radians(lon2 - lon1)
@@ -355,30 +324,32 @@ def estimate_fare(ride_id):
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
         distance_km = round(6371 * c, 1)  # Earth radius in km
     else:
+        # Fallback to random distance
         distance_km = round(random.uniform(3.0, 15.0), 1)
-
+    
     # Calculate duration based on distance (approx 4 minutes per km + traffic)
     duration_min = round(distance_km * 4 + random.uniform(5, 15))
-
-    # Calculate fare
+    
+    # Calculate fare breakdown
     base_fare = 25.0
     distance_charge = distance_km * 8.0
     duration_charge = duration_min * 0.5
-    total_fare = round(base_fare + distance_charge + duration_charge, 2)
-
+    service_fee = 5.0
+    total_fare = round(base_fare + distance_charge + duration_charge + service_fee, 2)
+    
     fare_estimate = {
         'distance_km': distance_km,
         'duration_min': duration_min,
         'base_fare': base_fare,
         'distance_charge': round(distance_charge, 2),
         'duration_charge': round(duration_charge, 2),
+        'service_fee': service_fee,
         'total_fare': total_fare
     }
-
-    return render_template("estimate_fare.html",
-                           ride=ride,
-                           fare_estimate=fare_estimate)
-
+    
+    return render_template("fare_estimate.html", 
+                         ride=ride, 
+                         fare_estimate=fare_estimate)
 
 # ============================================================
 # STORY 4 — DRIVER REGISTRATION (TASK A - COMPLETE WITH FILE UPLOADS)

@@ -1330,3 +1330,358 @@ input:focus {
 .btn-secondary:hover {
     background: #e5e7eb;
 }
+
+.fare-estimate {
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.estimate-header {
+    margin-bottom: 2rem;
+}
+
+/* Step indicator improvements */
+.fare-estimate .form-steps::before {
+    background: linear-gradient(to right, #2563eb 50%, #e5e7eb 50%);
+}
+
+.fare-estimate .step.completed .step-number {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
+.fare-estimate .step.active .step-number {
+    background: white;
+    color: #2563eb;
+    border: 2px solid #2563eb;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+/* Ride Summary */
+.ride-summary {
+    background: #f9fafb;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+.summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.summary-header h3 {
+    font-size: 1rem;
+    color: #374151;
+    font-weight: 600;
+    margin: 0;
+}
+
+.edit-link {
+    font-size: 0.875rem;
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.edit-link:hover {
+    text-decoration: underline;
+}
+
+.location-details {
+    position: relative;
+}
+
+.location-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+}
+
+.location-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    margin-top: 0.125rem;
+}
+
+.location-icon.pickup {
+    color: #10b981;
+}
+
+.location-icon.dropoff {
+    color: #2563eb;
+}
+
+.location-info {
+    flex: 1;
+}
+
+.location-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.location-address {
+    font-size: 0.95rem;
+    color: #1f2933;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.location-divider {
+    padding-left: 10px;
+    height: 20px;
+}
+
+.location-divider::before {
+    content: '';
+    display: block;
+    width: 2px;
+    height: 20px;
+    background: #d1d5db;
+    margin-left: 4px;
+}
+
+.ride-notes {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.notes-content {
+    font-size: 0.9rem;
+    color: #374151;
+    line-height: 1.4;
+}
+
+/* Trip Info Card */
+.trip-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.trip-stat {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.stat-icon {
+    font-size: 1.5rem;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 1rem;
+    color: #1f2933;
+    font-weight: 700;
+}
+
+/* Fare Breakdown */
+.fare-breakdown {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.fare-breakdown h3 {
+    font-size: 1rem;
+    color: #374151;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+}
+
+.fare-items {
+    margin-bottom: 1rem;
+}
+
+.fare-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.fare-item:last-child {
+    border-bottom: none;
+}
+
+.fare-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.fare-value {
+    font-size: 0.9rem;
+    color: #1f2933;
+    font-weight: 600;
+}
+
+.total-section {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 0;
+    margin-top: 0.5rem;
+    border-top: 2px solid #e5e7eb;
+}
+
+.total-label {
+    font-size: 1.1rem;
+    color: #374151;
+    font-weight: 600;
+}
+
+.total-value {
+    font-size: 1.5rem;
+    color: #2563eb;
+    font-weight: 700;
+}
+
+.fare-disclaimer {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f3f4f6;
+    text-align: center;
+}
+
+.fare-disclaimer p {
+    font-size: 0.8rem;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+/* Task Progress */
+.task-progress {
+    background: #f3f4f6;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.progress-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.progress-item:last-child {
+    margin-bottom: 0;
+}
+
+.progress-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.progress-item.completed .progress-icon {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.progress-item.pending .progress-icon {
+    background: #e5e7eb;
+    color: #9ca3af;
+}
+
+.progress-text {
+    font-size: 0.875rem;
+    color: #374151;
+    font-weight: 500;
+}
+
+.progress-item.completed .progress-text {
+    color: #065f46;
+}
+
+.progress-item.pending .progress-text {
+    color: #6b7280;
+}
+
+/* Action Buttons */
+.estimate-actions {
+    text-align: center;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn-confirm {
+    width: 100%;
+    background: #d1d5db;
+    color: #6b7280;
+    border: none;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    font-size: 1rem;
+    cursor: not-allowed;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.btn-main {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.btn-note {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.btn-secondary {
+    display: block;
+    padding: 0.75rem;
+    background: #f3f4f6;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #e5e7eb;
+}

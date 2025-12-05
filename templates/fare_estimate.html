@@ -1,14 +1,10 @@
-{% extends "base.html" %}
 
-{% block title %}Fare Estimate | U-Ride{% endblock %}
-
-{% block content %}
 <div class="card fare-estimate">
     <div class="estimate-header">
-        <h2 class="card-title">Fare Estimate</h2>
+        <h2 class="card-title">Your Fare Estimate</h2>
         <div class="form-steps">
             <div class="step completed">
-                <div class="step-number">1</div>
+                <div class="step-number">✓</div>
                 <div class="step-label">Where to?</div>
             </div>
             <div class="step active">
@@ -33,7 +29,7 @@
                 <div class="location-icon pickup">●</div>
                 <div class="location-info">
                     <div class="location-label">Pickup</div>
-                    <div class="location-address">{{ ride_request.pickup_address }}</div>
+                    <div class="location-address">{{ ride.pickup_address }}</div>
                 </div>
             </div>
 
@@ -43,67 +39,92 @@
                 <div class="location-icon dropoff">📍</div>
                 <div class="location-info">
                     <div class="location-label">Dropoff</div>
-                    <div class="location-address">{{ ride_request.dropoff_address }}</div>
+                    <div class="location-address">{{ ride.dropoff_address }}</div>
                 </div>
             </div>
         </div>
 
-        {% if ride_request.notes %}
+        {% if ride.notes %}
         <div class="ride-notes">
             <div class="notes-label">Note for driver</div>
-            <div class="notes-content">{{ ride_request.notes }}</div>
+            <div class="notes-content">{{ ride.notes }}</div>
         </div>
         {% endif %}
     </div>
 
+    <!-- Trip Info Card -->
+    <div class="trip-info">
+        <div class="trip-stat">
+            <div class="stat-icon">📏</div>
+            <div class="stat-content">
+                <div class="stat-label">Distance</div>
+                <div class="stat-value">{{ fare_estimate.distance_km }} km</div>
+            </div>
+        </div>
+        <div class="trip-stat">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-content">
+                <div class="stat-label">Est. Duration</div>
+                <div class="stat-value">{{ fare_estimate.duration_min }} min</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fare Breakdown -->
     <div class="fare-breakdown">
         <h3>Fare Breakdown</h3>
 
         <div class="fare-items">
             <div class="fare-item">
                 <span class="fare-label">Base Fare</span>
-                <span class="fare-value">---</span>
+                <span class="fare-value">EGP {{ "%.2f"|format(fare_estimate.base_fare) }}</span>
             </div>
             <div class="fare-item">
-                <span class="fare-label">Distance Charge</span>
-                <span class="fare-value">---</span>
+                <span class="fare-label">Distance Charge ({{ fare_estimate.distance_km }} km)</span>
+                <span class="fare-value">EGP {{ "%.2f"|format(fare_estimate.distance_charge) }}</span>
             </div>
             <div class="fare-item">
-                <span class="fare-label">Duration Charge</span>
-                <span class="fare-value">---</span>
+                <span class="fare-label">Duration Charge ({{ fare_estimate.duration_min }} min)</span>
+                <span class="fare-value">EGP {{ "%.2f"|format(fare_estimate.duration_charge) }}</span>
             </div>
             <div class="fare-item">
                 <span class="fare-label">Service Fee</span>
-                <span class="fare-value">---</span>
+                <span class="fare-value">EGP {{ "%.2f"|format(fare_estimate.service_fee) }}</span>
             </div>
         </div>
 
         <div class="total-section">
             <span class="total-label">Total Estimate</span>
-            <span class="total-value">---</span>
+            <span class="total-value">EGP {{ "%.2f"|format(fare_estimate.total_fare) }}</span>
         </div>
 
         <div class="fare-disclaimer">
-            <p>This is an estimate. Actual fare may vary based on traffic and route.</p>
+            <p>⚠️ This is an estimate. Actual fare may vary based on traffic and route conditions.</p>
         </div>
     </div>
 
-    <div class="estimate-actions">
-        <div class="task-progress">
-            <div class="progress-item completed">
-                <span class="progress-icon">✓</span>
-                <span class="progress-text">Task 1: Ride request form completed</span>
-            </div>
-            <div class="progress-item current">
-                <span class="progress-icon">↻</span>
-                <span class="progress-text">Task 2: Fare calculation in progress</span>
-            </div>
+    <!-- Task Progress -->
+    <div class="task-progress">
+        <div class="progress-item completed">
+            <span class="progress-icon">✓</span>
+            <span class="progress-text">Task 1: Ride request form completed</span>
         </div>
+        <div class="progress-item completed">
+            <span class="progress-icon">✓</span>
+            <span class="progress-text">Task 2: Fare calculation completed</span>
+        </div>
+        <div class="progress-item pending">
+            <span class="progress-icon">○</span>
+            <span class="progress-text">Task 3: Waiting for driver assignment</span>
+        </div>
+    </div>
 
+    <!-- Action Buttons -->
+    <div class="estimate-actions">
         <div class="action-buttons">
             <button class="btn-confirm" disabled>
-                <span class="btn-main">Confirm Ride</span>
-                <span class="btn-note">(Task 3)</span>
+                <span class="btn-main">Confirm & Wait for Driver</span>
+                <span class="btn-note">(Available in Task 3)</span>
             </button>
 
             <a href="{{ url_for('passenger_dashboard') }}" class="btn-secondary">
