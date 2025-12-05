@@ -1,59 +1,23 @@
-{% extends "base.html" %}
+<div class="card ride-requests-card" style="margin-top: 2rem;">
+    <h3>Ride Requests</h3>
 
-{% block title %}Driver Dashboard | U-Ride{% endblock %}
+    {% if ride_requests and ride_requests|length > 0 %}
+        {% for ride in ride_requests %}
+            <div class="ride-item" style="padding:1rem; border:1px solid #ddd; margin-bottom:1rem; border-radius:10px;">
+                <p><strong>Ride #{{ ride.id }}</strong></p>
+                <p><strong>Pickup:</strong> {{ ride.pickup_address }}</p>
+                <p><strong>Dropoff:</strong> {{ ride.dropoff_address }}</p>
 
-{% block content %}
-<div class="card driver-dashboard">
-    <div class="card-header-row">
-        <h2 class="card-title">Driver Dashboard</h2>
-        <span class="status-pill {% if driver.is_online %}status-online{% else %}status-offline{% endif %}">
-            {% if driver.is_online %}Online{% else %}Offline{% endif %}
-        </span>
-    </div>
+                <form action="{{ url_for('driver_accept_ride', ride_id=ride.id) }}" method="POST" style="display:inline-block;">
+                    <button class="btn btn-success btn-sm" type="submit">Accept</button>
+                </form>
 
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <div class="flash flash-success">
-            {% for message in messages %}
-                <p>{{ message }}</p>
-            {% endfor %}
-        </div>
-    {% endif %}
-    {% endwith %}
-
-    <div class="driver-info">
-        <p><strong>Name:</strong> {{ driver.name }}</p>
-        <p><strong>License:</strong> {{ driver.license_number }}</p>
-        <p><strong>Vehicle:</strong> {{ driver.vehicle_info }}</p>
-        <p>
-            <strong>Verification Status:</strong>
-            <span class="badge
-                {% if driver.verification_status == 'approved' %}badge-approved
-                {% elif driver.verification_status == 'rejected' %}badge-rejected
-                {% else %}badge-pending
-                {% endif %}
-            ">
-                {{ driver.verification_status | capitalize }}
-            </span>
-        </p>
-    </div>
-
-    {% if driver.verification_status == "approved" %}
-        <form method="POST"
-              action="{{ url_for('driver_toggle') }}"
-              class="toggle-form">
-            <button type="submit" class="btn btn-primary">
-                {% if driver.is_online %}
-                    Go Offline
-                {% else %}
-                    Go Online
-                {% endif %}
-            </button>
-        </form>
+                <form action="{{ url_for('driver_reject_ride', ride_id=ride.id) }}" method="POST" style="display:inline-block;">
+                    <button class="btn btn-danger btn-sm" type="submit">Reject</button>
+                </form>
+            </div>
+        {% endfor %}
     {% else %}
-        <p class="warning">
-            You cannot go online until an admin approves your account.
-        </p>
+        <p>No ride requests at the moment.</p>
     {% endif %}
 </div>
-{% endblock %}
