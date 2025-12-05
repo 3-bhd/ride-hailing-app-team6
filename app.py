@@ -218,18 +218,6 @@ def passenger_dashboard():
         flash("Please log in as a passenger to access your dashboard.")
         return redirect(url_for("passenger_login_page"))
 
-    if request.method == "POST":
-        pickup = request.form.get("pickup", "").strip()
-        destination = request.form.get("destination", "").strip()
-        notes = request.form.get("notes", "").strip()
-
-        if not pickup or not destination:
-            flash("Please enter both pickup and destination.")
-        else:
-            # For Sprint 1, we just simulate a ride request.
-            # In a future sprint, this would insert into a rides table.
-            flash("Ride request submitted! (Feature to be completed in next sprint.)")
-
     # Get passenger info
     conn = get_db()
     cursor = conn.cursor()
@@ -238,6 +226,7 @@ def passenger_dashboard():
     conn.close()
 
     return render_template("passenger_dashboard.html", passenger=passenger)
+
 
 # ============================================================
 # SPRINT 2 - TASK 1: Passenger Ride Request Form
@@ -266,42 +255,130 @@ def passenger_request_ride():
         flash("Please enter both pickup and dropoff addresses.")
         return redirect(url_for("passenger_dashboard"))
 
-    # For now, just store the ride request in session
-    # In Task 2, we'll create a proper database entry
-    session['ride_request'] = {
-        'pickup_address': pickup_address,
-        'dropoff_address': dropoff_address,
-        'pickup_lat': pickup_lat,
-        'pickup_lng': pickup_lng,
-        'dropoff_lat': dropoff_lat,
-        'dropoff_lng': dropoff_lng,
-        'notes': notes,
-        'passenger_id': session["user_id"]
-    }
+    # Save to database
+    conn = get_db()
+    cursor = conn.cursor()
 
-    # Redirect to fare estimate page (Task 2)
-    flash("Ride request received! Redirecting to fare estimate...")
-    return redirect(url_for("fare_estimate"))
+    try:
+        cursor.execute("""
+                       INSERT INTO rides (passenger_id, pickup_address, dropoff_address,
+                                          pickup_lat, pickup_lng, dropoff_lat, dropoff_lng,
+                                          notes, status)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'requested')
+                       """, (session["user_id"], pickup_address, dropoff_address,
+                             pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, notes))
+
+        ride_id = cursor.lastrowid
+        conn.commit()
+
+        flash("Ride request submitted successfully!")
+        return redirect(url_for("fare_estimate", ride_id=ride_id))
+
+    except Exception as e:
+        conn.rollback()
+        flash(f"Error submitting ride request: {str(e)}")
+        return redirect(url_for("passenger_dashboard"))
+
+    finally:
+        conn.close()
 
 
-@app.route("/fare-estimate")
-def fare_estimate():
+@app.route("/fare-estimate/<int:ride_id>")
+def fare_estimate(ride_id):
     # Must be logged in as a passenger
     if "user_id" not in session or session.get("role") != "passenger":
         flash("Please log in as a passenger.")
         return redirect(url_for("passenger_login_page"))
 
-    # Get ride request from session
-    ride_request = session.get('ride_request')
-    if not ride_request:
-        flash("No ride request found. Please request a ride first.")
+    # Get ride from database
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+                   SELECT r.*, u.name as passenger_name
+                   FROM rides r
+                            JOIN users u ON r.passenger_id = u.id
+                   WHERE r.id = ? AND r.passenger_id = ?
+                   """, (ride_id, session["user_id"]))
+
+    ride = cursor.fetchone()
+    conn.close()
+
+    if not ride:
+        flash("Ride not found.")
         return redirect(url_for("passenger_dashboard"))
 
     # For Task 1, just show a simple message
     # Task 2 will implement proper fare calculation
     return render_template("fare_estimate.html",
-                           ride_request=ride_request,
+                           ride=ride,
                            fare_estimate="To be calculated in Task 2")
+
+
+@app.route("/estimate-fare/<int:ride_id>")
+def estimate_fare(ride_id):
+    # Must be logged in as a passenger
+    if "user_id" not in session or session.get("role") != "passenger":
+        flash("Please log in as a passenger.")
+        return redirect(url_for("passenger_login_page"))
+
+    # Get ride from database
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+                   SELECT r.*, u.name as passenger_name
+                   FROM rides r
+                            JOIN users u ON r.passenger_id = u.id
+                   WHERE r.id = ? AND r.passenger_id = ?
+                   """, (ride_id, session["user_id"]))
+
+    ride = cursor.fetchone()
+    conn.close()
+
+    if not ride:
+        flash("Ride not found.")
+        return redirect(url_for("passenger_dashboard"))
+
+    # Calculate fake distance and duration (Task 2 logic)
+    import random
+    import math
+
+    # Generate random but realistic distance based on lat/lng
+    if ride["pickup_lat"] and ride["dropoff_lat"]:
+        # Simple haversine formula approximation
+        lat1, lon1 = float(ride["pickup_lat"]), float(ride["pickup_lng"])
+        lat2, lon2 = float(ride["dropoff_lat"]), float(ride["dropoff_lng"])
+
+        # Approximate distance in km
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        distance_km = round(6371 * c, 1)  # Earth radius in km
+    else:
+        distance_km = round(random.uniform(3.0, 15.0), 1)
+
+    # Calculate duration based on distance (approx 4 minutes per km + traffic)
+    duration_min = round(distance_km * 4 + random.uniform(5, 15))
+
+    # Calculate fare
+    base_fare = 25.0
+    distance_charge = distance_km * 8.0
+    duration_charge = duration_min * 0.5
+    total_fare = round(base_fare + distance_charge + duration_charge, 2)
+
+    fare_estimate = {
+        'distance_km': distance_km,
+        'duration_min': duration_min,
+        'base_fare': base_fare,
+        'distance_charge': round(distance_charge, 2),
+        'duration_charge': round(duration_charge, 2),
+        'total_fare': total_fare
+    }
+
+    return render_template("estimate_fare.html",
+                           ride=ride,
+                           fare_estimate=fare_estimate)
+
 
 # ============================================================
 # STORY 4 — DRIVER REGISTRATION (TASK A - COMPLETE WITH FILE UPLOADS)

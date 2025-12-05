@@ -27,3 +27,18 @@ CREATE TABLE IF NOT EXISTS driver_status (
     last_change TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(driver_id) REFERENCES drivers(id)
 );
+-- Rides table
+CREATE TABLE IF NOT EXISTS rides (
+                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                     passenger_id INTEGER NOT NULL,
+                                     pickup_address TEXT NOT NULL,
+                                     dropoff_address TEXT NOT NULL,
+                                     pickup_lat REAL,
+                                     pickup_lng REAL,
+                                     dropoff_lat REAL,
+                                     dropoff_lng REAL,
+                                     notes TEXT,
+                                     status TEXT DEFAULT 'requested', -- requested, estimated, waiting, accepted, completed, cancelled
+                                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                     FOREIGN KEY (passenger_id) REFERENCES users(id)
+    );
