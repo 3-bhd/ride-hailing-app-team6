@@ -1,3 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Fare Estimate{% endblock %}
+{% block content %}
 
 <div class="card fare-estimate">
     <div class="estimate-header">
@@ -103,29 +106,16 @@
         </div>
     </div>
 
-    <!-- Task Progress -->
-    <div class="task-progress">
-        <div class="progress-item completed">
-            <span class="progress-icon">✓</span>
-            <span class="progress-text">Task 1: Ride request form completed</span>
-        </div>
-        <div class="progress-item completed">
-            <span class="progress-icon">✓</span>
-            <span class="progress-text">Task 2: Fare calculation completed</span>
-        </div>
-        <div class="progress-item pending">
-            <span class="progress-icon">○</span>
-            <span class="progress-text">Task 3: Waiting for driver assignment</span>
-        </div>
-    </div>
-
-    <!-- Action Buttons -->
+    <!-- Confirm Action -->
     <div class="estimate-actions">
         <div class="action-buttons">
-            <button class="btn-confirm" disabled>
-                <span class="btn-main">Confirm & Wait for Driver</span>
-                <span class="btn-note">(Available in Task 3)</span>
-            </button>
+
+            <!-- REAL Confirm Button -->
+            <form action="{{ url_for('confirm_ride', ride_id=ride.id) }}" method="POST">
+                <button class="btn-confirm">
+                    Confirm & Wait for Driver
+                </button>
+            </form>
 
             <a href="{{ url_for('passenger_dashboard') }}" class="btn-secondary">
                 Back to Dashboard
@@ -133,4 +123,5 @@
         </div>
     </div>
 </div>
+
 {% endblock %}

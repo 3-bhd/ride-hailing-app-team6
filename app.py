@@ -36,8 +36,21 @@ def init_db():
     conn = get_db()
     conn.executescript(sql)
 
-    # Check if admin user exists, if not create one
     cursor = conn.cursor()
+
+    # --- Migration: ensure rides table has estimated_time_minutes column ---
+    try:
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='rides'")
+        if cursor.fetchone() is not None:
+            cursor.execute("PRAGMA table_info(rides)")
+            columns = [row[1] for row in cursor.fetchall()]  # row[1] is column name
+            if "estimated_time_minutes" not in columns:
+                cursor.execute("ALTER TABLE rides ADD COLUMN estimated_time_minutes INTEGER")
+    except sqlite3.Error as e:
+        # If something goes wrong, just print it; do not break the app
+        print(f"[init_db] Migration for estimated_time_minutes failed: {e}")
+
+    # Check if admin user exists, if not create one
     cursor.execute("SELECT id FROM users WHERE email = 'admin@ridehail.com'")
     admin_exists = cursor.fetchone()
 
@@ -330,6 +343,20 @@ def fare_estimate(ride_id):
     # Calculate duration based on distance (approx 4 minutes per km + traffic)
     duration_min = round(distance_km * 4 + random.uniform(5, 15))
     
+
+    # Store estimated time in the database for use on the waiting screen
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE rides SET estimated_time_minutes = ? WHERE id = ?",
+            (duration_min, ride_id)
+        )
+        conn.commit()
+        conn.close()
+    except sqlite3.Error as e:
+        print(f"[fare_estimate] Failed to update estimated_time_minutes: {e}")
+    
     # Calculate fare breakdown
     base_fare = 25.0
     distance_charge = distance_km * 8.0
@@ -350,6 +377,51 @@ def fare_estimate(ride_id):
     return render_template("fare_estimate.html", 
                          ride=ride, 
                          fare_estimate=fare_estimate)
+
+
+@app.route("/confirm-ride/<int:ride_id>", methods=["POST"])
+def confirm_ride(ride_id):
+    # Ensure passenger is logged in
+    if "user_id" not in session or session.get("role") != "passenger":
+        flash("Please log in first.")
+        return redirect(url_for("passenger_login_page"))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Update ride status → waiting for driver
+    cursor.execute(
+        "UPDATE rides SET status = 'waiting' WHERE id = ?",
+        (ride_id,)
+    )
+    conn.commit()
+    conn.close()
+
+    # Redirect passenger to waiting screen
+    return redirect(url_for("wait_driver", ride_id=ride_id))
+
+
+@app.route("/wait-driver/<int:ride_id>")
+def wait_driver(ride_id):
+    # Passenger must be logged in to view their ride status
+    if "user_id" not in session or session.get("role") != "passenger":
+        flash("Please log in as a passenger to view your ride.")
+        return redirect(url_for("passenger_login_page"))
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM rides WHERE id = ? AND passenger_id = ?",
+        (ride_id, session["user_id"])
+    )
+    ride = cursor.fetchone()
+    conn.close()
+
+    if not ride:
+        flash("Ride not found.")
+        return redirect(url_for("passenger_dashboard"))
+
+    return render_template("wait_driver.html", ride=ride)
 
 # ============================================================
 # STORY 4 — DRIVER REGISTRATION (TASK A - COMPLETE WITH FILE UPLOADS)

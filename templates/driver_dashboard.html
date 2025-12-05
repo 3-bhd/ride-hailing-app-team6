@@ -1,3 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Driver Dashboard{% endblock %}
+{% block content %}
+
+<div class="card" style="margin-top: 2rem;">
+    <h2>Driver Dashboard</h2>
+
+    {% if driver %}
+        <p><strong>Name:</strong> {{ driver.name }}</p>
+        <p><strong>License Number:</strong> {{ driver.license_number }}</p>
+        <p><strong>Vehicle:</strong> {{ driver.vehicle_info }}</p>
+        <p><strong>Verification Status:</strong> {{ driver.verification_status }}</p>
+        <p><strong>Status:</strong>
+            {% if driver.is_online %}
+                <span style="color: green; font-weight: bold;">Online</span>
+            {% else %}
+                <span style="color: gray; font-weight: bold;">Offline</span>
+            {% endif %}
+        </p>
+    {% else %}
+        <p>Driver information not found.</p>
+    {% endif %}
+</div>
+
 <div class="card ride-requests-card" style="margin-top: 2rem;">
     <h3>Ride Requests</h3>
 
@@ -21,3 +45,5 @@
         <p>No ride requests at the moment.</p>
     {% endif %}
 </div>
+
+{% endblock %}
