@@ -1,54 +1,100 @@
 {% extends "base.html" %}
 
-{% block title %}Passenger Dashboard | U-Ride{% endblock %}
+{% block title %}Request a Ride | U-Ride{% endblock %}
 
 {% block content %}
 <div class="card passenger-dashboard">
-    <h2 class="card-title">Passenger Dashboard</h2>
+    <div class="dashboard-header">
+        <h2 class="card-title">Request a Ride</h2>
+        {% if passenger %}
+        <div class="passenger-info">
+            <span class="avatar">{{ passenger.name[0]|upper }}</span>
+            <span>{{ passenger.name }}</span>
+        </div>
+        {% endif %}
+    </div>
 
-    {% if passenger %}
-        <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 0.75rem;">
-            Logged in as <strong>{{ passenger.name }}</strong> ({{ passenger.email }})
-        </p>
-    {% endif %}
+    <div class="form-steps">
+        <div class="step active">
+            <div class="step-number">1</div>
+            <div class="step-label">Where to?</div>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-label">Fare estimate</div>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-label">Confirm</div>
+        </div>
+    </div>
 
     {% with messages = get_flashed_messages() %}
     {% if messages %}
-        <div class="flash flash-success">
-            {% for message in messages %}
-                <p>{{ message }}</p>
-            {% endfor %}
+    <div class="flash-messages">
+        {% for message in messages %}
+        <div class="flash-message">
+            <span class="flash-icon">✓</span>
+            <span class="flash-text">{{ message }}</span>
         </div>
+        {% endfor %}
+    </div>
     {% endif %}
     {% endwith %}
 
-    <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">Request a Ride</h3>
+    <form method="POST" action="{{ url_for('passenger_request_ride') }}" class="ride-form">
+        <div class="address-input-group">
+            <div class="input-row">
+                <div class="input-icon">●</div>
+                <div class="input-wrapper">
+                    <label for="pickup_address" class="input-label">Pickup location</label>
+                    <input id="pickup_address" type="text" name="pickup_address"
+                           class="address-input"
+                           placeholder="Enter pickup address"
+                           required autocomplete="off">
+                </div>
+                <input type="hidden" id="pickup_lat" name="pickup_lat">
+                <input type="hidden" id="pickup_lng" name="pickup_lng">
+            </div>
 
-    <form method="POST" class="form">
-        <div class="form-group">
-            <label for="pickup">Pickup Location</label>
-            <input id="pickup" type="text" name="pickup"
-                   placeholder="e.g., AUC Main Gate" required>
+            <div class="input-divider">
+                <div class="divider-line"></div>
+            </div>
+
+            <div class="input-row">
+                <div class="input-icon">📍</div>
+                <div class="input-wrapper">
+                    <label for="dropoff_address" class="input-label">Destination</label>
+                    <input id="dropoff_address" type="text" name="dropoff_address"
+                           class="address-input"
+                           placeholder="Where are you going?"
+                           required autocomplete="off">
+                </div>
+                <input type="hidden" id="dropoff_lat" name="dropoff_lat">
+                <input type="hidden" id="dropoff_lng" name="dropoff_lng">
+            </div>
         </div>
 
-        <div class="form-group">
-            <label for="destination">Destination</label>
-            <input id="destination" type="text" name="destination"
-                   placeholder="e.g., Zamalek" required>
+        <div class="notes-section">
+            <label for="notes" class="notes-label">Add a note for your driver (optional)</label>
+            <textarea id="notes" name="notes" class="notes-textarea"
+                      placeholder="e.g., I have 2 bags, waiting at the main entrance..."
+                      rows="2"></textarea>
         </div>
 
-        <div class="form-group">
-            <label for="notes">Notes (optional)</label>
-            <input id="notes" type="text" name="notes"
-                   placeholder="e.g., I have 2 bags">
-        </div>
-
-        <button type="submit" class="btn btn-primary">Submit Request</button>
+        <button type="submit" class="btn-request-ride">
+            <span class="btn-text">Get fare estimate</span>
+            <span class="btn-arrow">→</span>
+        </button>
     </form>
 
-    <p style="font-size: 0.8rem; color: #6b7280; margin-top: 0.75rem;">
-        * For this sprint, ride requests are not yet matched with drivers.
-        This page demonstrates the passenger flow after login.
-    </p>
+    <div class="recent-trips">
+        <h3 class="section-title">Recent trips</h3>
+        <div class="empty-state">
+            <div class="empty-icon">🚗</div>
+            <p class="empty-text">No recent trips yet</p>
+            <p class="empty-subtext">Your ride history will appear here</p>
+        </div>
+    </div>
 </div>
 {% endblock %}

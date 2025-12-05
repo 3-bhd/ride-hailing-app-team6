@@ -341,3 +341,992 @@ input:focus {
 .passenger-dashboard {
     margin-top: 1rem;
 }
+/* ============ PASSENGER DASHBOARD (Task 1) ============ */
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.passenger-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    color: #374151;
+    font-weight: 500;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Ride form steps */
+.form-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding: 0 0.5rem;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.step.active .step-number {
+    background: #2563eb;
+    color: white;
+}
+
+.step-number {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.step-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.step.active .step-label {
+    color: #2563eb;
+    font-weight: 500;
+}
+
+/* Address inputs */
+.address-input-group {
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.input-row {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 0.375rem;
+    margin-bottom: 2px;
+}
+
+.input-row:last-child {
+    margin-bottom: 0;
+}
+
+.input-icon {
+    margin-right: 0.75rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.input-wrapper {
+    flex: 1;
+}
+
+.input-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.address-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+    color: #1f2933;
+    background: transparent;
+}
+
+.address-input::placeholder {
+    color: #9ca3af;
+}
+
+.input-divider {
+    padding: 0 0.75rem;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.divider-line {
+    width: 2px;
+    height: 20px;
+    background: #e5e7eb;
+}
+
+/* Notes textarea */
+.notes-section {
+    margin-bottom: 1.5rem;
+}
+
+.notes-label {
+    display: block;
+    font-size: 0.875rem;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.notes-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+}
+
+.notes-textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+}
+
+/* Get fare estimate button */
+.btn-request-ride {
+    width: 100%;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    margin-bottom: 1.5rem;
+}
+
+.btn-request-ride:hover {
+    background: #1d4ed8;
+}
+
+.btn-text {
+    font-size: 0.95rem;
+}
+
+.btn-arrow {
+    font-size: 1.1rem;
+}
+
+/* Recent trips */
+.recent-trips {
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.section-title {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    background: #f9fafb;
+    border-radius: 0.5rem;
+}
+
+.empty-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.5;
+}
+
+.empty-text {
+    font-size: 0.95rem;
+    color: #374151;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.empty-subtext {
+    font-size: 0.85rem;
+    color: #9ca3af;
+}
+
+/* ============ FARE ESTIMATE PAGE (Task 2) ============ */
+
+.fare-estimate-container {
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.estimate-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.estimate-steps {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+.estimate-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.estimate-step.completed .step-number,
+.estimate-step.active .step-number {
+    background: #2563eb;
+    color: white;
+}
+
+/* Ride summary */
+.ride-summary-section {
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.ride-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.ride-summary-header h3 {
+    font-size: 1rem;
+    color: #374151;
+    font-weight: 600;
+    margin: 0;
+}
+
+.edit-link a {
+    font-size: 0.875rem;
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.edit-link a:hover {
+    text-decoration: underline;
+}
+
+.location-details {
+    padding: 0.5rem 0;
+}
+
+.location-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+}
+
+.location-icon {
+    color: #2563eb;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.location-info {
+    flex: 1;
+}
+
+.location-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.location-address {
+    font-size: 0.95rem;
+    color: #1f2933;
+    font-weight: 500;
+}
+
+.ride-notes {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.notes-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.notes-content {
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+/* Fare breakdown */
+.fare-breakdown-section {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.fare-breakdown-section h3 {
+    font-size: 1rem;
+    color: #374151;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.fare-items {
+    margin-bottom: 1rem;
+}
+
+.fare-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.fare-item:last-child {
+    border-bottom: none;
+}
+
+.fare-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.fare-value {
+    font-size: 0.9rem;
+    color: #1f2933;
+    font-weight: 500;
+}
+
+.total-fare {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 0;
+    border-top: 2px solid #e5e7eb;
+    margin-top: 0.5rem;
+}
+
+.total-label {
+    font-size: 1rem;
+    color: #374151;
+    font-weight: 600;
+}
+
+.total-value {
+    font-size: 1.1rem;
+    color: #1f2933;
+    font-weight: 700;
+}
+
+.fare-note {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-align: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f3f4f6;
+}
+
+/* Task status */
+.task-status {
+    background: #f3f4f6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.status-item:last-child {
+    margin-bottom: 0;
+}
+
+.status-icon {
+    font-size: 0.875rem;
+}
+
+.status-text {
+    font-size: 0.875rem;
+    color: #374151;
+}
+
+.status-item.complete .status-text {
+    color: #065f46;
+}
+
+.status-item.pending .status-text {
+    color: #92400e;
+}
+
+/* Action buttons */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn-confirm {
+    width: 100%;
+    background: #d1d5db;
+    color: #6b7280;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: not-allowed;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.btn-text {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.btn-subtext {
+    font-size: 0.75rem;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+.btn-back {
+    display: block;
+    text-align: center;
+    background: #f3f4f6;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.btn-back:hover {
+    background: #e5e7eb;
+}
+
+
+/* Flash Messages Styling */
+.flash-messages {
+    margin-bottom: 1.5rem;
+}
+
+.flash-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #d1fae5;
+    color: #065f46;
+    border-radius: 0.5rem;
+    border: 1px solid #a7f3d0;
+    font-size: 0.9rem;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.flash-icon {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.flash-text {
+    flex: 1;
+}
+
+/* Make step indicator more professional */
+.form-steps {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.form-steps::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 1rem;
+    right: 1rem;
+    height: 2px;
+    background: #e5e7eb;
+    z-index: 1;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    z-index: 2;
+    flex: 1;
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-number {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
+    transform: scale(1.1);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.step-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.step.active .step-label {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+/* Clean up address input styling */
+.input-row {
+    display: flex;
+    align-items: center;
+    padding: 0.875rem;
+    background: white;
+    border-radius: 0.5rem;
+    margin-bottom: 2px;
+    border: 1px solid #e5e7eb;
+    transition: border-color 0.2s;
+}
+
+.input-row:focus-within {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.input-icon {
+    margin-right: 0.875rem;
+    color: #2563eb;
+    font-size: 0.875rem;
+    width: 20px;
+    text-align: center;
+}
+
+.address-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+    color: #1f2933;
+    background: transparent;
+    font-weight: 500;
+}
+
+.address-input::placeholder {
+    color: #9ca3af;
+    font-weight: 400;
+}
+/* ============ FARE ESTIMATE PAGE ============ */
+
+.fare-estimate {
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.estimate-header {
+    margin-bottom: 2rem;
+}
+
+/* Step indicator for fare estimate */
+.fare-estimate .form-steps::before {
+    background: linear-gradient(to right, #2563eb 50%, #e5e7eb 50%);
+}
+
+.fare-estimate .step.completed .step-number {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
+.fare-estimate .step.active .step-number {
+    background: white;
+    color: #2563eb;
+    border: 2px solid #2563eb;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+/* Ride Summary */
+.ride-summary {
+    background: #f9fafb;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+.summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.summary-header h3 {
+    font-size: 1rem;
+    color: #374151;
+    font-weight: 600;
+    margin: 0;
+}
+
+.edit-link {
+    font-size: 0.875rem;
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.edit-link:hover {
+    text-decoration: underline;
+}
+
+.location-details {
+    position: relative;
+}
+
+.location-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+}
+
+.location-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    margin-top: 0.125rem;
+}
+
+.location-icon.pickup {
+    color: #10b981;
+}
+
+.location-icon.dropoff {
+    color: #2563eb;
+}
+
+.location-info {
+    flex: 1;
+}
+
+.location-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.location-address {
+    font-size: 0.95rem;
+    color: #1f2933;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.location-divider {
+    padding-left: 10px;
+    height: 20px;
+}
+
+.location-divider::before {
+    content: '';
+    display: block;
+    width: 2px;
+    height: 20px;
+    background: #d1d5db;
+    margin-left: 4px;
+}
+
+.ride-notes {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.notes-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.notes-content {
+    font-size: 0.9rem;
+    color: #374151;
+    line-height: 1.4;
+}
+
+/* Fare Breakdown */
+.fare-breakdown {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.fare-breakdown h3 {
+    font-size: 1rem;
+    color: #374151;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+}
+
+.fare-items {
+    margin-bottom: 1rem;
+}
+
+.fare-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.fare-item:last-child {
+    border-bottom: none;
+}
+
+.fare-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.fare-value {
+    font-size: 0.9rem;
+    color: #1f2933;
+    font-weight: 500;
+}
+
+.total-section {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 0;
+    margin-top: 0.5rem;
+    border-top: 2px solid #e5e7eb;
+}
+
+.total-label {
+    font-size: 1rem;
+    color: #374151;
+    font-weight: 600;
+}
+
+.total-value {
+    font-size: 1.25rem;
+    color: #1f2933;
+    font-weight: 700;
+}
+
+.fare-disclaimer {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f3f4f6;
+    text-align: center;
+}
+
+.fare-disclaimer p {
+    font-size: 0.75rem;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+/* Task Progress */
+.task-progress {
+    background: #f3f4f6;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.progress-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.progress-item:last-child {
+    margin-bottom: 0;
+}
+
+.progress-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+}
+
+.progress-item.completed .progress-icon {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.progress-item.current .progress-icon {
+    background: #fef3c7;
+    color: #92400e;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+.progress-text {
+    font-size: 0.875rem;
+    color: #374151;
+    font-weight: 500;
+}
+
+.progress-item.completed .progress-text {
+    color: #065f46;
+}
+
+.progress-item.current .progress-text {
+    color: #92400e;
+}
+
+/* Action Buttons */
+.estimate-actions {
+    text-align: center;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn-confirm {
+    width: 100%;
+    background: #d1d5db;
+    color: #6b7280;
+    border: none;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    font-size: 1rem;
+    cursor: not-allowed;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.btn-main {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.btn-note {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.btn-secondary {
+    display: block;
+    padding: 0.75rem;
+    background: #f3f4f6;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #e5e7eb;
+}

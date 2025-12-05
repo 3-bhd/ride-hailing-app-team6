@@ -239,6 +239,69 @@ def passenger_dashboard():
 
     return render_template("passenger_dashboard.html", passenger=passenger)
 
+# ============================================================
+# SPRINT 2 - TASK 1: Passenger Ride Request Form
+# ============================================================
+
+@app.route("/passenger/request-ride", methods=["POST"])
+def passenger_request_ride():
+    # Must be logged in as a passenger
+    if "user_id" not in session or session.get("role") != "passenger":
+        flash("Please log in as a passenger to request a ride.")
+        return redirect(url_for("passenger_login_page"))
+
+    # Get form data
+    pickup_address = request.form.get("pickup_address", "").strip()
+    dropoff_address = request.form.get("dropoff_address", "").strip()
+    notes = request.form.get("notes", "").strip()
+
+    # Get lat/lng (currently empty, will be filled by Google Places later)
+    pickup_lat = request.form.get("pickup_lat", "").strip() or "29.9759"  # Default: AUC coordinates
+    pickup_lng = request.form.get("pickup_lng", "").strip() or "31.2839"
+    dropoff_lat = request.form.get("dropoff_lat", "").strip() or "30.0596"  # Default: Zamalek
+    dropoff_lng = request.form.get("dropoff_lng", "").strip() or "31.2237"
+
+    # Validate required fields
+    if not pickup_address or not dropoff_address:
+        flash("Please enter both pickup and dropoff addresses.")
+        return redirect(url_for("passenger_dashboard"))
+
+    # For now, just store the ride request in session
+    # In Task 2, we'll create a proper database entry
+    session['ride_request'] = {
+        'pickup_address': pickup_address,
+        'dropoff_address': dropoff_address,
+        'pickup_lat': pickup_lat,
+        'pickup_lng': pickup_lng,
+        'dropoff_lat': dropoff_lat,
+        'dropoff_lng': dropoff_lng,
+        'notes': notes,
+        'passenger_id': session["user_id"]
+    }
+
+    # Redirect to fare estimate page (Task 2)
+    flash("Ride request received! Redirecting to fare estimate...")
+    return redirect(url_for("fare_estimate"))
+
+
+@app.route("/fare-estimate")
+def fare_estimate():
+    # Must be logged in as a passenger
+    if "user_id" not in session or session.get("role") != "passenger":
+        flash("Please log in as a passenger.")
+        return redirect(url_for("passenger_login_page"))
+
+    # Get ride request from session
+    ride_request = session.get('ride_request')
+    if not ride_request:
+        flash("No ride request found. Please request a ride first.")
+        return redirect(url_for("passenger_dashboard"))
+
+    # For Task 1, just show a simple message
+    # Task 2 will implement proper fare calculation
+    return render_template("fare_estimate.html",
+                           ride_request=ride_request,
+                           fare_estimate="To be calculated in Task 2")
 
 # ============================================================
 # STORY 4 — DRIVER REGISTRATION (TASK A - COMPLETE WITH FILE UPLOADS)
@@ -310,9 +373,9 @@ def driver_register_submit():
         # Insert into users table
         # --------------------
         cursor.execute("""
-            INSERT INTO users (name, email, phone, password_hash, role)
-            VALUES (?, ?, ?, ?, 'driver')
-        """, (name, email, phone, pw_hash))
+                       INSERT INTO users (name, email, phone, password_hash, role)
+                       VALUES (?, ?, ?, ?, 'driver')
+                       """, (name, email, phone, pw_hash))
 
         user_id = cursor.lastrowid
 
@@ -320,12 +383,12 @@ def driver_register_submit():
         # Insert into drivers table WITH FILE PATHS
         # --------------------
         cursor.execute("""
-            INSERT INTO drivers (user_id, license_number, vehicle_info, 
-                               id_doc_path, license_doc_path, vehicle_doc_path, 
-                               verification_status)
-            VALUES (?, ?, ?, ?, ?, ?, 'pending')
-        """, (user_id, license_number, vehicle_info,
-              id_doc_path, license_doc_path, vehicle_doc_path))
+                       INSERT INTO drivers (user_id, license_number, vehicle_info,
+                                            id_doc_path, license_doc_path, vehicle_doc_path,
+                                            verification_status)
+                       VALUES (?, ?, ?, ?, ?, ?, 'pending')
+                       """, (user_id, license_number, vehicle_info,
+                             id_doc_path, license_doc_path, vehicle_doc_path))
 
         conn.commit()
 
@@ -360,50 +423,50 @@ def admin_drivers_list():
 
     # Pending drivers
     cursor.execute("""
-        SELECT d.id as driver_id,
-               u.name,
-               u.email,
-               u.phone,
-               d.license_number,
-               d.vehicle_info,
-               d.id_doc_path,
-               d.license_doc_path,
-               d.vehicle_doc_path,
-               d.verification_status
-        FROM drivers d
-        JOIN users u ON d.user_id = u.id
-        WHERE d.verification_status = 'pending'
-    """)
+                   SELECT d.id as driver_id,
+                          u.name,
+                          u.email,
+                          u.phone,
+                          d.license_number,
+                          d.vehicle_info,
+                          d.id_doc_path,
+                          d.license_doc_path,
+                          d.vehicle_doc_path,
+                          d.verification_status
+                   FROM drivers d
+                            JOIN users u ON d.user_id = u.id
+                   WHERE d.verification_status = 'pending'
+                   """)
     pending_drivers = cursor.fetchall()
 
     # Approved drivers
     cursor.execute("""
-        SELECT d.id as driver_id,
-               u.name,
-               u.email,
-               u.phone,
-               d.license_number,
-               d.vehicle_info,
-               d.verification_status
-        FROM drivers d
-        JOIN users u ON d.user_id = u.id
-        WHERE d.verification_status = 'approved'
-    """)
+                   SELECT d.id as driver_id,
+                          u.name,
+                          u.email,
+                          u.phone,
+                          d.license_number,
+                          d.vehicle_info,
+                          d.verification_status
+                   FROM drivers d
+                            JOIN users u ON d.user_id = u.id
+                   WHERE d.verification_status = 'approved'
+                   """)
     approved_drivers = cursor.fetchall()
 
     # Rejected drivers
     cursor.execute("""
-        SELECT d.id as driver_id,
-               u.name,
-               u.email,
-               u.phone,
-               d.license_number,
-               d.vehicle_info,
-               d.verification_status
-        FROM drivers d
-        JOIN users u ON d.user_id = u.id
-        WHERE d.verification_status = 'rejected'
-    """)
+                   SELECT d.id as driver_id,
+                          u.name,
+                          u.email,
+                          u.phone,
+                          d.license_number,
+                          d.vehicle_info,
+                          d.verification_status
+                   FROM drivers d
+                            JOIN users u ON d.user_id = u.id
+                   WHERE d.verification_status = 'rejected'
+                   """)
     rejected_drivers = cursor.fetchall()
 
     conn.close()
@@ -426,10 +489,10 @@ def admin_approve(driver_id):
 
     try:
         cursor.execute("""
-            UPDATE drivers 
-               SET verification_status = 'approved' 
-             WHERE id = ?
-        """, (driver_id,))
+                       UPDATE drivers
+                       SET verification_status = 'approved'
+                       WHERE id = ?
+                       """, (driver_id,))
         conn.commit()
         flash(f"Driver #{driver_id} has been approved.")
     except Exception as e:
@@ -451,10 +514,10 @@ def admin_reject(driver_id):
 
     try:
         cursor.execute("""
-            UPDATE drivers 
-               SET verification_status = 'rejected' 
-             WHERE id = ?
-        """, (driver_id,))
+                       UPDATE drivers
+                       SET verification_status = 'rejected'
+                       WHERE id = ?
+                       """, (driver_id,))
         conn.commit()
         flash(f"Driver #{driver_id} has been rejected.")
     except Exception as e:
@@ -482,18 +545,18 @@ def driver_dashboard():
 
     # Get the driver linked to this logged-in user
     cursor.execute("""
-        SELECT 
-            u.name,
-            d.id              AS driver_id,
-            d.license_number,
-            d.vehicle_info,
-            d.verification_status,
-            COALESCE(ds.is_online, 0) AS is_online
-        FROM drivers d
-        JOIN users u ON d.user_id = u.id
-        LEFT JOIN driver_status ds ON ds.driver_id = d.id
-        WHERE u.id = ?
-    """, (session["user_id"],))
+                   SELECT
+                       u.name,
+                       d.id              AS driver_id,
+                       d.license_number,
+                       d.vehicle_info,
+                       d.verification_status,
+                       COALESCE(ds.is_online, 0) AS is_online
+                   FROM drivers d
+                            JOIN users u ON d.user_id = u.id
+                            LEFT JOIN driver_status ds ON ds.driver_id = d.id
+                   WHERE u.id = ?
+                   """, (session["user_id"],))
 
     driver = cursor.fetchone()
     conn.close()
@@ -517,15 +580,15 @@ def driver_toggle():
 
     # Get driver row + current status
     cursor.execute("""
-        SELECT 
-            d.id AS driver_id,
-            d.verification_status,
-            COALESCE(ds.is_online, 0) AS is_online
-        FROM drivers d
-        JOIN users u ON d.user_id = u.id
-        LEFT JOIN driver_status ds ON ds.driver_id = d.id
-        WHERE u.id = ?
-    """, (session["user_id"],))
+                   SELECT
+                       d.id AS driver_id,
+                       d.verification_status,
+                       COALESCE(ds.is_online, 0) AS is_online
+                   FROM drivers d
+                            JOIN users u ON d.user_id = u.id
+                            LEFT JOIN driver_status ds ON ds.driver_id = d.id
+                   WHERE u.id = ?
+                   """, (session["user_id"],))
     row = cursor.fetchone()
 
     if row is None:
@@ -549,16 +612,16 @@ def driver_toggle():
 
     if status_row is None:
         cursor.execute("""
-            INSERT INTO driver_status (driver_id, is_online, last_change)
-            VALUES (?, ?, CURRENT_TIMESTAMP)
-        """, (driver_id, new_online))
+                       INSERT INTO driver_status (driver_id, is_online, last_change)
+                       VALUES (?, ?, CURRENT_TIMESTAMP)
+                       """, (driver_id, new_online))
     else:
         cursor.execute("""
-            UPDATE driver_status
-               SET is_online = ?,
-                   last_change = CURRENT_TIMESTAMP
-             WHERE driver_id = ?
-        """, (new_online, driver_id))
+                       UPDATE driver_status
+                       SET is_online = ?,
+                           last_change = CURRENT_TIMESTAMP
+                       WHERE driver_id = ?
+                       """, (new_online, driver_id))
 
     conn.commit()
     conn.close()
