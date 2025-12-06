@@ -32,13 +32,29 @@
                 <p><strong>Pickup:</strong> {{ ride.pickup_address }}</p>
                 <p><strong>Dropoff:</strong> {{ ride.dropoff_address }}</p>
 
-                <form action="{{ url_for('driver_accept_ride', ride_id=ride.id) }}" method="POST" style="display:inline-block;">
-                    <button class="btn btn-success btn-sm" type="submit">Accept</button>
-                </form>
+                {% if ride.estimated_time_minutes %}
+                    <p><strong>Estimated Time:</strong> ~{{ ride.estimated_time_minutes }} min</p>
+                {% endif %}
 
-                <form action="{{ url_for('driver_reject_ride', ride_id=ride.id) }}" method="POST" style="display:inline-block;">
-                    <button class="btn btn-danger btn-sm" type="submit">Reject</button>
-                </form>
+                {# Small map preview for pickup location if we have coords #}
+                {% if ride.pickup_lat and ride.pickup_lng %}
+                <div id="ride-map-{{ ride.id }}"
+                     class="ride-map"
+                     data-lat="{{ ride.pickup_lat }}"
+                     data-lng="{{ ride.pickup_lng }}"
+                     style="height: 200px; border-radius: 10px; margin-top: 0.5rem; border: 1px solid #ccc;">
+                </div>
+                {% endif %}
+
+                <div style="margin-top:0.75rem;">
+                    <form action="{{ url_for('driver_accept_ride', ride_id=ride.id) }}" method="POST" style="display:inline-block;">
+                        <button class="btn btn-success btn-sm" type="submit">Accept</button>
+                    </form>
+
+                    <form action="{{ url_for('driver_reject_ride', ride_id=ride.id) }}" method="POST" style="display:inline-block; margin-left:0.5rem;">
+                        <button class="btn btn-danger btn-sm" type="submit">Reject</button>
+                    </form>
+                </div>
             </div>
         {% endfor %}
     {% else %}
@@ -46,4 +62,31 @@
     {% endif %}
 </div>
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // For each ride that has coords, create its own Leaflet map
+    var mapContainers = document.querySelectorAll('.ride-map');
+
+    mapContainers.forEach(function (el) {
+        var lat = parseFloat(el.dataset.lat);
+        var lng = parseFloat(el.dataset.lng);
+
+        if (isNaN(lat) || isNaN(lng)) {
+            return;
+        }
+
+        var map = L.map(el).setView([lat, lng], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        L.marker([lat, lng]).addTo(map);
+    });
+});
+</script>
 {% endblock %}

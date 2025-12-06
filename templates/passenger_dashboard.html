@@ -44,6 +44,7 @@
 
     <form method="POST" action="{{ url_for('passenger_request_ride') }}" class="ride-form">
         <div class="address-input-group">
+            <!-- PICKUP ROW -->
             <div class="input-row">
                 <div class="input-icon">●</div>
                 <div class="input-wrapper">
@@ -52,6 +53,8 @@
                            class="address-input"
                            placeholder="Enter pickup address"
                            required autocomplete="off">
+                    <!-- Autocomplete suggestions -->
+                    <div id="pickup_suggestions" class="autocomplete-suggestions"></div>
                 </div>
                 <input type="hidden" id="pickup_lat" name="pickup_lat">
                 <input type="hidden" id="pickup_lng" name="pickup_lng">
@@ -61,6 +64,7 @@
                 <div class="divider-line"></div>
             </div>
 
+            <!-- DROPOFF ROW -->
             <div class="input-row">
                 <div class="input-icon">📍</div>
                 <div class="input-wrapper">
@@ -69,6 +73,8 @@
                            class="address-input"
                            placeholder="Where are you going?"
                            required autocomplete="off">
+                    <!-- Autocomplete suggestions -->
+                    <div id="dropoff_suggestions" class="autocomplete-suggestions"></div>
                 </div>
                 <input type="hidden" id="dropoff_lat" name="dropoff_lat">
                 <input type="hidden" id="dropoff_lng" name="dropoff_lng">
@@ -82,7 +88,20 @@
                       rows="2"></textarea>
         </div>
 
-        <button type="submit" class="btn-request-ride">
+        <!-- MAP SECTION: PREVIEW ONLY -->
+        <div class="card" style="margin-top: 1.5rem;">
+            <h3 class="section-title">Locations on map (preview)</h3>
+            <p class="map-hint">
+                Type your pickup and destination above and select from the suggestions.
+                The map will show your chosen locations. You <strong>cannot set locations by clicking the map</strong>.
+            </p>
+
+            <div id="ride-map"
+                 style="height: 300px; border-radius: 12px; margin-top: 0.75rem;">
+            </div>
+        </div>
+
+        <button type="submit" class="btn-request-ride" style="margin-top: 1.5rem;">
             <span class="btn-text">Get fare estimate</span>
             <span class="btn-arrow">→</span>
         </button>
@@ -97,4 +116,117 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ============== AUTOCOMPLETE USING OPENSTREETMAP (NOMINATIM) ==============
+function setupAutocomplete(inputId, suggestionsId, latId, lngId, markerMode) {
+    const input = document.getElementById(inputId);
+    const box = document.getElementById(suggestionsId);
+    const latInput = document.getElementById(latId);
+    const lngInput = document.getElementById(lngId);
+
+    let timeoutId = null;
+
+    input.addEventListener('input', function () {
+        const q = input.value.trim();
+        // Clear coords if user changes text
+        latInput.value = '';
+        lngInput.value = '';
+
+        if (q.length < 3) {
+            box.innerHTML = '';
+            box.style.display = 'none';
+            return;
+        }
+
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            fetch("https://nominatim.openstreetmap.org/search?format=json&limit=5&q=" + encodeURIComponent(q))
+                .then(res => res.json())
+                .then(results => {
+                    box.innerHTML = '';
+                    if (!results || results.length === 0) {
+                        box.style.display = 'none';
+                        return;
+                    }
+                    results.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'autocomplete-item';
+                        div.textContent = item.display_name;
+                        div.addEventListener('click', () => {
+                            input.value = item.display_name;
+                            latInput.value = item.lat;
+                            lngInput.value = item.lon;
+                            box.innerHTML = '';
+                            box.style.display = 'none';
+
+                            const lat = parseFloat(item.lat);
+                            const lng = parseFloat(item.lon);
+                            if (!isNaN(lat) && !isNaN(lng)) {
+                                setMarker(markerMode, lat, lng);
+                            }
+                        });
+                        box.appendChild(div);
+                    });
+                    box.style.display = 'block';
+                })
+                .catch(err => {
+                    console.error('Nominatim error', err);
+                    box.innerHTML = '';
+                    box.style.display = 'none';
+                });
+        }, 400);
+    });
+
+    // Close suggestions if clicking outside
+    document.addEventListener('click', function (e) {
+        if (!box.contains(e.target) && e.target !== input) {
+            box.innerHTML = '';
+            box.style.display = 'none';
+        }
+    });
+}
+
+// ============== MAP (LEAFLET PREVIEW ONLY) ==============
+let map, pickupMarker, dropoffMarker;
+
+function setMarker(mode, lat, lng) {
+    if (!map) return;
+    const pos = [lat, lng];
+
+    if (mode === 'pickup') {
+        if (pickupMarker) map.removeLayer(pickupMarker);
+        pickupMarker = L.marker(pos).addTo(map);
+        document.getElementById('pickup_lat').value = lat.toFixed(6);
+        document.getElementById('pickup_lng').value = lng.toFixed(6);
+    } else {
+        if (dropoffMarker) map.removeLayer(dropoffMarker);
+        dropoffMarker = L.marker(pos).addTo(map);
+        document.getElementById('dropoff_lat').value = lat.toFixed(6);
+        document.getElementById('dropoff_lng').value = lng.toFixed(6);
+    }
+
+    map.setView(pos, 14);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Map init (center on Cairo)
+    const initialLat = 30.0444;
+    const initialLng = 31.2357;
+
+    map = L.map('ride-map').setView([initialLat, initialLng], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // NO map.on('click') – map is preview only now
+
+    // Autocomplete setup (typing is the ONLY way to set locations)
+    setupAutocomplete('pickup_address', 'pickup_suggestions', 'pickup_lat', 'pickup_lng', 'pickup');
+    setupAutocomplete('dropoff_address', 'dropoff_suggestions', 'dropoff_lat', 'dropoff_lng', 'dropoff');
+});
+</script>
 {% endblock %}

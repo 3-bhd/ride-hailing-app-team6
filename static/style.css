@@ -816,18 +816,27 @@ input:focus {
 
 .btn-confirm {
     width: 100%;
-    background: #d1d5db;
-    color: #6b7280;
+    background: #2563eb;        /* active blue */
+    color: #ffffff;
     border: none;
-    border-radius: 0.5rem;
-    padding: 0.75rem;
+    border-radius: 0.75rem;
+    padding: 1rem;
     font-size: 1rem;
     font-weight: 600;
-    cursor: not-allowed;
+    cursor: pointer;            /* ✅ NO not-allowed */
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 0.25rem;
+    transition: background-color 0.2s ease, transform 0.1s ease;
 }
+
+.btn-confirm:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+
 
 .btn-text {
     font-size: 0.95rem;
@@ -1291,21 +1300,6 @@ input:focus {
     gap: 0.75rem;
 }
 
-.btn-confirm {
-    width: 100%;
-    background: #d1d5db;
-    color: #6b7280;
-    border: none;
-    border-radius: 0.75rem;
-    padding: 1rem;
-    font-size: 1rem;
-    cursor: not-allowed;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-}
-
 .btn-main {
     font-weight: 600;
     font-size: 1rem;
@@ -1646,21 +1640,6 @@ input:focus {
     gap: 0.75rem;
 }
 
-.btn-confirm {
-    width: 100%;
-    background: #d1d5db;
-    color: #6b7280;
-    border: none;
-    border-radius: 0.75rem;
-    padding: 1rem;
-    font-size: 1rem;
-    cursor: not-allowed;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-}
-
 .btn-main {
     font-weight: 600;
     font-size: 1rem;
@@ -1684,4 +1663,54 @@ input:focus {
 
 .btn-secondary:hover {
     background: #e5e7eb;
+}
+
+.autocomplete-suggestions {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    margin-top: 4px;
+    max-height: 180px;
+    overflow-y: auto;
+    display: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    font-size: 0.9rem;
+    z-index: 1000;
+}
+
+.autocomplete-item {
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.autocomplete-item:hover {
+    background-color: #f3f3f3;
+}
+
+.map-mode-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.map-mode-btn {
+    flex: 1;
+    padding: 0.4rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid #ccc;
+    background: #f8f8f8;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.map-mode-btn.active {
+    background: #222;
+    color: #fff;
+    border-color: #222;
+}
+
+.map-hint {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 0.25rem;
 }

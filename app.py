@@ -257,11 +257,29 @@ def passenger_request_ride():
     dropoff_address = request.form.get("dropoff_address", "").strip()
     notes = request.form.get("notes", "").strip()
 
-    # Get lat/lng (currently empty, will be filled by Google Places later)
-    pickup_lat = request.form.get("pickup_lat", "").strip() or "29.9759"  # Default: AUC coordinates
-    pickup_lng = request.form.get("pickup_lng", "").strip() or "31.2839"
-    dropoff_lat = request.form.get("dropoff_lat", "").strip() or "30.0596"  # Default: Zamalek
-    dropoff_lng = request.form.get("dropoff_lng", "").strip() or "31.2237"
+        # Get lat/lng from form (set by Leaflet + Nominatim JS)
+    def parse_float(value):
+        try:
+            if not value:
+                return None
+            return float(value)
+        except ValueError:
+            return None
+
+    pickup_lat = parse_float(request.form.get("pickup_lat"))
+    pickup_lng = parse_float(request.form.get("pickup_lng"))
+    dropoff_lat = parse_float(request.form.get("dropoff_lat"))
+    dropoff_lng = parse_float(request.form.get("dropoff_lng"))
+
+    # Optional: if user never touched map/autocomplete, fall back to defaults
+    if (
+        pickup_lat is None and pickup_lng is None and
+        dropoff_lat is None and dropoff_lng is None
+    ):
+        # Default AUC → Zamalek
+        pickup_lat, pickup_lng = 29.9759, 31.2839
+        dropoff_lat, dropoff_lng = 30.0596, 31.2237
+
 
     # Validate required fields
     if not pickup_address or not dropoff_address:
@@ -321,28 +339,29 @@ def fare_estimate(ride_id):
         return redirect(url_for("passenger_dashboard"))
 
     # Calculate fake distance and duration
-    import random
+    # Calculate distance and duration
     import math
-    
-    # Generate realistic distance based on lat/lng if available
+
+    # 1) Distance (km)
     if ride["pickup_lat"] and ride["dropoff_lat"]:
-        # Simple haversine formula approximation
+        # Haversine straight-line distance
         lat1, lon1 = float(ride["pickup_lat"]), float(ride["pickup_lng"])
         lat2, lon2 = float(ride["dropoff_lat"]), float(ride["dropoff_lng"])
-        
-        # Approximate distance in km
+
         dlat = math.radians(lat2 - lat1)
         dlon = math.radians(lon2 - lon1)
-        a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-        distance_km = round(6371 * c, 1)  # Earth radius in km
+        a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        straight_distance = 6371 * c  # km
+
+        # Approximate road distance as ~1.3x straight line, and clamp
+        distance_km = round(max(1.0, min(straight_distance * 1.3, 40.0)), 1)
     else:
-        # Fallback to random distance
-        distance_km = round(random.uniform(3.0, 15.0), 1)
-    
-    # Calculate duration based on distance (approx 4 minutes per km + traffic)
-    duration_min = round(distance_km * 4 + random.uniform(5, 15))
-    
+        # Fallback when we have no coordinates: assume a medium city trip
+        distance_km = 7.0
+
+    # 2) Duration (minutes) – assume ~3 minutes per km + 5 minutes overhead
+    duration_min = round(distance_km * 3 + 5)
 
     # Store estimated time in the database for use on the waiting screen
     try:
@@ -356,13 +375,17 @@ def fare_estimate(ride_id):
         conn.close()
     except sqlite3.Error as e:
         print(f"[fare_estimate] Failed to update estimated_time_minutes: {e}")
-    
-    # Calculate fare breakdown
-    base_fare = 25.0
-    distance_charge = distance_km * 8.0
-    duration_charge = duration_min * 0.5
-    service_fee = 5.0
+
+    # 3) Fare breakdown – more moderate pricing
+    base_fare = 15.0             # starting fee
+    per_km = 5.0                 # per km
+    per_min = 0.3                # per minute in traffic
+    service_fee = 3.0            # fixed platform fee
+
+    distance_charge = distance_km * per_km
+    duration_charge = duration_min * per_min
     total_fare = round(base_fare + distance_charge + duration_charge + service_fee, 2)
+
     
     fare_estimate = {
         'distance_km': distance_km,
@@ -685,17 +708,21 @@ def driver_dashboard():
         flash("Driver profile not found. Please complete registration.")
         return redirect(url_for("driver_register_page"))
 
-    # Load ALL ride requests with status = waiting (assigned to any online driver)
+    # Load ALL ride requests with status = waiting
     cursor.execute("""
         SELECT 
             id,
             pickup_address,
             dropoff_address,
+            pickup_lat,
+            pickup_lng,
+            estimated_time_minutes,
             created_at
         FROM rides
         WHERE status = 'waiting'
         ORDER BY created_at ASC
     """)
+
 
     ride_requests = cursor.fetchall()
     conn.close()

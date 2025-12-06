@@ -5,6 +5,14 @@
     <title>{% block title %}U-Ride{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Leaflet CSS (Free OpenStreetMap library) -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    />
 </head>
 <body>
     <nav class="navbar">
@@ -20,9 +28,7 @@
                     <a href="{{ url_for('passenger_login_page') }}">Login</a>
                 {% endif %}
 
-
                 <a href="{{ url_for('passenger_register_page') }}">Passenger Register</a>
-
                 <a href="{{ url_for('driver_register_page') }}">Driver Register</a>
                 <a href="{{ url_for('admin_drivers_list') }}">Admin</a>
 
@@ -31,7 +37,6 @@
                     <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
                 {% endif %}
             </div>
-
         </div>
     </nav>
 
@@ -44,5 +49,15 @@
     <footer class="footer">
         <small>© 2025 U-Ride – Ride Hailing Management System</small>
     </footer>
+
+    <!-- Leaflet JS -->
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin="">
+    </script>
+
+    {# Extra page-specific scripts go here #}
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html>
