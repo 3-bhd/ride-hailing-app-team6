@@ -11,3 +11,5 @@ python app.py
 ```
 
 Then open http://127.0.0.1:5000/ in your browser.
+
+Or you can use it directly using our deployed app using this link: https://web-production-be06b.up.railway.app/
