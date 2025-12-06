@@ -22,43 +22,135 @@
     {% endif %}
 </div>
 
+{# ===== ACTIVE RIDE CARD ===== #}
+<div class="card" style="margin-top: 2rem;">
+    <h3>Active Ride</h3>
+
+    {% if active_ride %}
+        <div class="ride-item" style="padding:1rem; border:1px solid #ddd; margin-bottom:1rem; border-radius:10px;">
+            <p><strong>Ride #{{ active_ride.id }}</strong></p>
+            <p><strong>Pickup:</strong> {{ active_ride.pickup_address }}</p>
+            <p><strong>Dropoff:</strong> {{ active_ride.dropoff_address }}</p>
+
+            {% if active_ride.estimated_time_minutes %}
+                <p><strong>Estimated Time:</strong> ~{{ active_ride.estimated_time_minutes }} min</p>
+            {% endif %}
+
+            <p><strong>Status:</strong> {{ active_ride.status }}</p>
+
+            {% if active_ride.pickup_lat and active_ride.pickup_lng %}
+                <div id="ride-map-active"
+                     data-lat="{{ active_ride.pickup_lat }}"
+                     data-lng="{{ active_ride.pickup_lng }}"
+                     style="height: 200px; border-radius: 10px; margin-top: 0.5rem; border: 1px solid #ccc;">
+                </div>
+            {% endif %}
+
+            <div style="margin-top:0.75rem;">
+                <form action="{{ url_for('driver_cancel_ride', ride_id=active_ride.id) }}"
+                      method="POST" style="display:inline-block;">
+                    <button class="btn btn-danger btn-sm" type="submit">Cancel Ride</button>
+                </form>
+
+                {% if active_ride.status == 'accepted' %}
+                    <form action="{{ url_for('driver_picked_up', ride_id=active_ride.id) }}"
+                          method="POST" style="display:inline-block; margin-left:0.5rem;">
+                        <button class="btn btn-primary btn-sm" type="submit">Passenger Picked Up</button>
+                    </form>
+                {% endif %}
+
+                {% if active_ride.status in ['accepted', 'picked_up'] %}
+                    <form action="{{ url_for('driver_complete_ride', ride_id=active_ride.id) }}"
+                          method="POST" style="display:inline-block; margin-left:0.5rem;">
+                        <button class="btn btn-success btn-sm" type="submit">Destination Reached</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <p>No active ride at the moment.</p>
+    {% endif %}
+</div>
+
+{# ===== NEW RIDE REQUESTS (ONLY IF NO ACTIVE RIDE) ===== #}
 <div class="card ride-requests-card" style="margin-top: 2rem;">
     <h3>Ride Requests</h3>
 
-    {% if ride_requests and ride_requests|length > 0 %}
-        {% for ride in ride_requests %}
-            <div class="ride-item" style="padding:1rem; border:1px solid #ddd; margin-bottom:1rem; border-radius:10px;">
-                <p><strong>Ride #{{ ride.id }}</strong></p>
-                <p><strong>Pickup:</strong> {{ ride.pickup_address }}</p>
-                <p><strong>Dropoff:</strong> {{ ride.dropoff_address }}</p>
-
-                {% if ride.estimated_time_minutes %}
-                    <p><strong>Estimated Time:</strong> ~{{ ride.estimated_time_minutes }} min</p>
-                {% endif %}
-
-                {# Small map preview for pickup location if we have coords #}
-                {% if ride.pickup_lat and ride.pickup_lng %}
-                <div id="ride-map-{{ ride.id }}"
-                     class="ride-map"
-                     data-lat="{{ ride.pickup_lat }}"
-                     data-lng="{{ ride.pickup_lng }}"
-                     style="height: 200px; border-radius: 10px; margin-top: 0.5rem; border: 1px solid #ccc;">
-                </div>
-                {% endif %}
-
-                <div style="margin-top:0.75rem;">
-                    <form action="{{ url_for('driver_accept_ride', ride_id=ride.id) }}" method="POST" style="display:inline-block;">
-                        <button class="btn btn-success btn-sm" type="submit">Accept</button>
-                    </form>
-
-                    <form action="{{ url_for('driver_reject_ride', ride_id=ride.id) }}" method="POST" style="display:inline-block; margin-left:0.5rem;">
-                        <button class="btn btn-danger btn-sm" type="submit">Reject</button>
-                    </form>
-                </div>
-            </div>
-        {% endfor %}
+    {% if active_ride %}
+        <p>You currently have an active ride. Finish it before accepting new requests.</p>
     {% else %}
-        <p>No ride requests at the moment.</p>
+        {% if ride_requests and ride_requests|length > 0 %}
+            {% for ride in ride_requests %}
+                <div class="ride-item" style="padding:1rem; border:1px solid #ddd; margin-bottom:1rem; border-radius:10px;">
+                    <p><strong>Ride #{{ ride.id }}</strong></p>
+                    <p><strong>Pickup:</strong> {{ ride.pickup_address }}</p>
+                    <p><strong>Dropoff:</strong> {{ ride.dropoff_address }}</p>
+
+                    {% if ride.estimated_time_minutes %}
+                        <p><strong>Estimated Time:</strong> ~{{ ride.estimated_time_minutes }} min</p>
+                    {% endif %}
+
+                    {% if ride.pickup_lat and ride.pickup_lng %}
+                        <div id="ride-map-{{ ride.id }}"
+                             class="ride-map"
+                             data-lat="{{ ride.pickup_lat }}"
+                             data-lng="{{ ride.pickup_lng }}"
+                             style="height: 200px; border-radius: 10px; margin-top: 0.5rem; border: 1px solid #ccc;">
+                        </div>
+                    {% endif %}
+
+                    <div style="margin-top:0.75rem;">
+                        <form action="{{ url_for('driver_accept_ride', ride_id=ride.id) }}"
+                              method="POST" style="display:inline-block;">
+                            <button class="btn btn-success btn-sm" type="submit">Accept</button>
+                        </form>
+
+                        <form action="{{ url_for('driver_reject_ride', ride_id=ride.id) }}"
+                              method="POST" style="display:inline-block; margin-left:0.5rem;">
+                            <button class="btn btn-danger btn-sm" type="submit">Reject</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No ride requests at the moment.</p>
+        {% endif %}
+    {% endif %}
+</div>
+
+{# ===== DRIVER RIDE HISTORY ===== #}
+<div class="card" style="margin-top: 2rem;">
+    <h3>Recent Ride History</h3>
+
+    {% if ride_history and ride_history|length > 0 %}
+        <div class="trip-list">
+            {% for r in ride_history %}
+                <div class="trip-item" style="padding:0.75rem 0; border-bottom:1px solid #eee;">
+                    <div class="trip-main">
+                        <div class="trip-route">
+                            <span class="badge">
+                                {{ r.status|capitalize }}
+                            </span>
+                            <span style="margin-left:0.5rem;">
+                                {{ r.pickup_address }} → {{ r.dropoff_address }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="trip-meta" style="font-size:0.85rem; color:#666; margin-top:0.25rem;">
+                        {% if r.passenger_name %}
+                            <span>Passenger: {{ r.passenger_name }}</span>
+                        {% endif %}
+                        {% if r.created_at %}
+                            <span style="margin-left:0.75rem;">On: {{ r.created_at }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color:#777; font-size:0.9rem;">
+            No past rides yet. Completed and cancelled trips will appear here.
+        </p>
     {% endif %}
 </div>
 
@@ -67,24 +159,34 @@
 {% block extra_scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    // For each ride that has coords, create its own Leaflet map
-    var mapContainers = document.querySelectorAll('.ride-map');
+    // Active ride map
+    var activeMapEl = document.getElementById('ride-map-active');
+    if (activeMapEl && typeof L !== "undefined") {
+        var lat = parseFloat(activeMapEl.dataset.lat);
+        var lng = parseFloat(activeMapEl.dataset.lng);
+        if (!isNaN(lat) && !isNaN(lng)) {
+            var map = L.map(activeMapEl).setView([lat, lng], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+            L.marker([lat, lng]).addTo(map);
+        }
+    }
 
+    // Waiting ride maps (for open requests)
+    var mapContainers = document.querySelectorAll('.ride-map');
     mapContainers.forEach(function (el) {
         var lat = parseFloat(el.dataset.lat);
         var lng = parseFloat(el.dataset.lng);
-
-        if (isNaN(lat) || isNaN(lng)) {
+        if (isNaN(lat) || isNaN(lng) || typeof L === "undefined") {
             return;
         }
-
         var map = L.map(el).setView([lat, lng], 14);
-
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
-
         L.marker([lat, lng]).addTo(map);
     });
 });

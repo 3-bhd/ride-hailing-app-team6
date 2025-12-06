@@ -38,17 +38,21 @@ def init_db():
 
     cursor = conn.cursor()
 
-    # --- Migration: ensure rides table has estimated_time_minutes column ---
+    # --- Migration: ensure rides table has estimated_time_minutes + driver_id columns ---
     try:
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='rides'")
         if cursor.fetchone() is not None:
             cursor.execute("PRAGMA table_info(rides)")
             columns = [row[1] for row in cursor.fetchall()]  # row[1] is column name
+
             if "estimated_time_minutes" not in columns:
                 cursor.execute("ALTER TABLE rides ADD COLUMN estimated_time_minutes INTEGER")
+
+            if "driver_id" not in columns:
+                cursor.execute("ALTER TABLE rides ADD COLUMN driver_id INTEGER")
     except sqlite3.Error as e:
         # If something goes wrong, just print it; do not break the app
-        print(f"[init_db] Migration for estimated_time_minutes failed: {e}")
+        print(f"[init_db] Migration for rides extra columns failed: {e}")
 
     # Check if admin user exists, if not create one
     cursor.execute("SELECT id FROM users WHERE email = 'admin@ridehail.com'")
@@ -58,12 +62,43 @@ def init_db():
         admin_password = generate_password_hash("Admin123!")
         cursor.execute(
             "INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, ?)",
-            ("Admin User", "admin@ridehail.com", "0000000000", admin_password, "admin")
+            ("Admin User", "admin@ridehail.com", "0000000000", admin_password, "admin"),
         )
         print("Admin user created: admin@ridehail.com / Admin123!")
 
     conn.commit()
     conn.close()
+
+
+def get_current_driver():
+    """
+    Return the driver row (joined with user + status) for the logged-in driver, or None.
+    """
+    if "user_id" not in session or session.get("role") != "driver":
+        return None
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT
+            u.name,
+            d.id AS driver_id,
+            d.license_number,
+            d.vehicle_info,
+            d.verification_status,
+            COALESCE(ds.is_online, 0) AS is_online
+        FROM drivers d
+        JOIN users u ON d.user_id = u.id
+        LEFT JOIN driver_status ds ON ds.driver_id = d.id
+        WHERE u.id = ?
+        """,
+        (session["user_id"],),
+    )
+    driver = cursor.fetchone()
+    conn.close()
+    return driver
+
 
 
 if not os.path.exists(DB_PATH):
@@ -117,6 +152,31 @@ def save_uploaded_file(file, folder):
         return file_path
     return None
 
+def get_current_driver():
+    """
+    Return the driver row (joined with user) for the logged-in driver, or None.
+    """
+    if "user_id" not in session or session.get("role") != "driver":
+        return None
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT
+            u.name,
+            d.id AS driver_id,
+            d.license_number,
+            d.vehicle_info,
+            d.verification_status,
+            COALESCE(ds.is_online, 0) AS is_online
+        FROM drivers d
+        JOIN users u ON d.user_id = u.id
+        LEFT JOIN driver_status ds ON ds.driver_id = d.id
+        WHERE u.id = ?
+    """, (session["user_id"],))
+    driver = cursor.fetchone()
+    conn.close()
+    return driver
 
 # ===============================
 # BASIC ROUTE
@@ -231,14 +291,58 @@ def passenger_dashboard():
         flash("Please log in as a passenger to access your dashboard.")
         return redirect(url_for("passenger_login_page"))
 
-    # Get passenger info
     conn = get_db()
     cursor = conn.cursor()
+
+    # Get passenger info
     cursor.execute("SELECT name, email FROM users WHERE id = ?", (session["user_id"],))
     passenger = cursor.fetchone()
+
+    # Check if passenger already has an active ride
+    cursor.execute(
+        """
+        SELECT id
+        FROM rides
+        WHERE passenger_id = ?
+          AND status IN ('waiting', 'accepted', 'picked_up')
+        ORDER BY created_at DESC
+        LIMIT 1
+        """,
+        (session["user_id"],),
+    )
+    active_ride = cursor.fetchone()
+
+    # Fetch recent completed / cancelled rides for history
+    cursor.execute(
+        """
+        SELECT
+            r.*,
+            u2.name AS driver_name
+        FROM rides r
+        LEFT JOIN drivers d ON r.driver_id = d.id
+        LEFT JOIN users u2 ON d.user_id = u2.id
+        WHERE r.passenger_id = ?
+          AND r.status IN ('completed', 'cancelled')
+        ORDER BY r.created_at DESC
+        LIMIT 5
+        """,
+        (session["user_id"],),
+    )
+    recent_rides = cursor.fetchall()
+
     conn.close()
 
-    return render_template("passenger_dashboard.html", passenger=passenger)
+    if active_ride:
+        # Redirect to waiting / status page if they already have a ride
+        return redirect(url_for("wait_driver", ride_id=active_ride["id"]))
+
+    return render_template(
+        "passenger_dashboard.html",
+        passenger=passenger,
+        recent_rides=recent_rides,
+    )
+
+
 
 
 # ============================================================
@@ -252,12 +356,33 @@ def passenger_request_ride():
         flash("Please log in as a passenger to request a ride.")
         return redirect(url_for("passenger_login_page"))
 
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Do not allow a new request if passenger already has an active ride
+    cursor.execute(
+        """
+        SELECT id
+        FROM rides
+        WHERE passenger_id = ?
+          AND status IN ('waiting', 'accepted', 'picked_up')
+        ORDER BY created_at DESC
+        LIMIT 1
+        """,
+        (session["user_id"],),
+    )
+    existing = cursor.fetchone()
+    if existing:
+        conn.close()
+        flash("You already have an active ride. You must finish or cancel it before requesting another.")
+        return redirect(url_for("wait_driver", ride_id=existing["id"]))
+
     # Get form data
     pickup_address = request.form.get("pickup_address", "").strip()
     dropoff_address = request.form.get("dropoff_address", "").strip()
     notes = request.form.get("notes", "").strip()
 
-        # Get lat/lng from form (set by Leaflet + Nominatim JS)
+    # Get lat/lng from form (set by Leaflet + Nominatim JS)
     def parse_float(value):
         try:
             if not value:
@@ -271,36 +396,40 @@ def passenger_request_ride():
     dropoff_lat = parse_float(request.form.get("dropoff_lat"))
     dropoff_lng = parse_float(request.form.get("dropoff_lng"))
 
-    # Optional: if user never touched map/autocomplete, fall back to defaults
-    if (
-        pickup_lat is None and pickup_lng is None and
-        dropoff_lat is None and dropoff_lng is None
-    ):
-        # Default AUC → Zamalek
-        pickup_lat, pickup_lng = 29.9759, 31.2839
-        dropoff_lat, dropoff_lng = 30.0596, 31.2237
-
-
-    # Validate required fields
     if not pickup_address or not dropoff_address:
+        conn.close()
         flash("Please enter both pickup and dropoff addresses.")
         return redirect(url_for("passenger_dashboard"))
 
-    # Save to database
-    conn = get_db()
-    cursor = conn.cursor()
-
     try:
-        cursor.execute("""
-                       INSERT INTO rides (passenger_id, pickup_address, dropoff_address,
-                                          pickup_lat, pickup_lng, dropoff_lat, dropoff_lng,
-                                          notes, status)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'requested')
-                       """, (session["user_id"], pickup_address, dropoff_address,
-                             pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, notes))
-
-        ride_id = cursor.lastrowid
+        cursor.execute(
+            """
+            INSERT INTO rides (
+                passenger_id,
+                pickup_address,
+                dropoff_address,
+                pickup_lat,
+                pickup_lng,
+                dropoff_lat,
+                dropoff_lng,
+                notes,
+                status
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'requested')
+            """,
+            (
+                session["user_id"],
+                pickup_address,
+                dropoff_address,
+                pickup_lat,
+                pickup_lng,
+                dropoff_lat,
+                dropoff_lng,
+                notes,
+            ),
+        )
         conn.commit()
+        ride_id = cursor.lastrowid
 
         flash("Ride request submitted successfully!")
         return redirect(url_for("fare_estimate", ride_id=ride_id))
@@ -433,19 +562,90 @@ def wait_driver(ride_id):
 
     conn = get_db()
     cursor = conn.cursor()
+
+    # Get the ride for this passenger
     cursor.execute(
         "SELECT * FROM rides WHERE id = ? AND passenger_id = ?",
-        (ride_id, session["user_id"])
+        (ride_id, session["user_id"]),
     )
     ride = cursor.fetchone()
-    conn.close()
 
     if not ride:
+        conn.close()
         flash("Ride not found.")
         return redirect(url_for("passenger_dashboard"))
 
-    return render_template("wait_driver.html", ride=ride)
+    # Default: no driver info
+    driver = None
 
+    # If a driver is assigned to this ride, load their info
+    if "driver_id" in ride.keys() and ride["driver_id"]:
+        cursor.execute(
+            """
+            SELECT
+                u.name AS driver_name,
+                d.vehicle_info AS vehicle_info,
+                d.license_number AS license_number
+            FROM drivers d
+            JOIN users u ON d.user_id = u.id
+            WHERE d.id = ?
+            """,
+            (ride["driver_id"],),
+        )
+        driver = cursor.fetchone()
+
+    conn.close()
+
+    return render_template("wait_driver.html", ride=ride, driver=driver)
+
+@app.route("/passenger/rides/<int:ride_id>/cancel", methods=["POST"])
+def passenger_cancel_ride(ride_id):
+    # Must be logged in as a passenger
+    if "user_id" not in session or session.get("role") != "passenger":
+        flash("Please log in as a passenger to cancel a ride.")
+        return redirect(url_for("passenger_login_page"))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Make sure this ride belongs to this passenger
+    cursor.execute(
+        """
+        SELECT status
+        FROM rides
+        WHERE id = ? AND passenger_id = ?
+        """,
+        (ride_id, session["user_id"]),
+    )
+    ride = cursor.fetchone()
+
+    if not ride:
+        conn.close()
+        flash("Ride not found.")
+        return redirect(url_for("passenger_dashboard"))
+
+    # Only allow cancellation if the ride is still in an active pre-trip state
+    if ride["status"] in ("completed", "cancelled"):
+        conn.close()
+        flash("This ride is already finished.")
+        return redirect(url_for("passenger_dashboard"))
+
+    if ride["status"] == "picked_up":
+        conn.close()
+        flash("You cannot cancel a ride after being picked up.")
+        return redirect(url_for("passenger_dashboard"))
+
+    cursor.execute(
+        "UPDATE rides SET status = 'cancelled' WHERE id = ?",
+        (ride_id,),
+    )
+    conn.commit()
+    conn.close()
+
+    flash("Your ride has been cancelled.")
+    return redirect(url_for("passenger_dashboard"))
+
+    
 # ============================================================
 # STORY 4 — DRIVER REGISTRATION (TASK A - COMPLETE WITH FILE UPLOADS)
 # ============================================================
@@ -683,55 +883,77 @@ def driver_dashboard():
         flash("Please log in as a driver to access your dashboard.")
         return redirect(url_for("passenger_login_page"))
 
-    conn = get_db()
-    cursor = conn.cursor()
-
-    # Load driver
-    cursor.execute("""
-        SELECT
-            u.name,
-            d.id AS driver_id,
-            d.license_number,
-            d.vehicle_info,
-            d.verification_status,
-            COALESCE(ds.is_online, 0) AS is_online
-        FROM drivers d
-        JOIN users u ON d.user_id = u.id
-        LEFT JOIN driver_status ds ON ds.driver_id = d.id
-        WHERE u.id = ?
-    """, (session["user_id"],))
-
-    driver = cursor.fetchone()
-
+    driver = get_current_driver()
     if driver is None:
-        conn.close()
         flash("Driver profile not found. Please complete registration.")
         return redirect(url_for("driver_register_page"))
 
-    # Load ALL ride requests with status = waiting
-    cursor.execute("""
-        SELECT 
-            id,
-            pickup_address,
-            dropoff_address,
-            pickup_lat,
-            pickup_lng,
-            estimated_time_minutes,
-            created_at
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # One active ride per driver: accepted or picked_up
+    cursor.execute(
+        """
+        SELECT *
         FROM rides
-        WHERE status = 'waiting'
+        WHERE driver_id = ?
+          AND status IN ('accepted', 'picked_up')
         ORDER BY created_at ASC
-    """)
+        LIMIT 1
+        """,
+        (driver["driver_id"],),
+    )
+    active_ride = cursor.fetchone()
 
+    # Only show waiting requests if no active ride
+    ride_requests = []
+    if not active_ride:
+        cursor.execute(
+            """
+            SELECT
+                id,
+                pickup_address,
+                dropoff_address,
+                pickup_lat,
+                pickup_lng,
+                dropoff_lat,
+                dropoff_lng,
+                estimated_time_minutes,
+                created_at
+            FROM rides
+            WHERE status = 'waiting'
+            ORDER BY created_at ASC
+            """
+        )
+        ride_requests = cursor.fetchall()
 
-    ride_requests = cursor.fetchall()
+    # Fetch recent completed / cancelled rides for this driver
+    cursor.execute(
+        """
+        SELECT
+            r.*,
+            u.name AS passenger_name
+        FROM rides r
+        JOIN users u ON r.passenger_id = u.id
+        WHERE r.driver_id = ?
+          AND r.status IN ('completed', 'cancelled')
+        ORDER BY r.created_at DESC
+        LIMIT 5
+        """,
+        (driver["driver_id"],),
+    )
+    ride_history = cursor.fetchall()
+
     conn.close()
 
     return render_template(
         "driver_dashboard.html",
         driver=driver,
-        ride_requests=ride_requests
+        active_ride=active_ride,
+        ride_requests=ride_requests,
+        ride_history=ride_history,
     )
+
 
 @app.route("/driver/rides/<int:ride_id>/accept", methods=["POST"])
 def driver_accept_ride(ride_id):
@@ -739,8 +961,30 @@ def driver_accept_ride(ride_id):
         flash("Please log in as a driver.")
         return redirect(url_for("passenger_login_page"))
 
+    driver = get_current_driver()
+    if driver is None:
+        flash("Driver profile not found.")
+        return redirect(url_for("driver_dashboard"))
+
     conn = get_db()
     cursor = conn.cursor()
+
+    # Ensure driver has no active ride already
+    cursor.execute(
+        """
+        SELECT id
+        FROM rides
+        WHERE driver_id = ?
+          AND status IN ('accepted', 'picked_up')
+        LIMIT 1
+        """,
+        (driver["driver_id"],),
+    )
+    existing = cursor.fetchone()
+    if existing:
+        conn.close()
+        flash("You already have an active ride. Finish it before accepting a new one.")
+        return redirect(url_for("driver_dashboard"))
 
     # Check ride still exists & is waiting
     cursor.execute("SELECT status FROM rides WHERE id = ?", (ride_id,))
@@ -753,19 +997,20 @@ def driver_accept_ride(ride_id):
 
     if row["status"] != "waiting":
         conn.close()
-        flash("Ride has already been taken.")
+        flash("Ride has already been taken or is not available.")
         return redirect(url_for("driver_dashboard"))
 
-    # Mark as accepted
+    # Mark as accepted and assign this driver
     cursor.execute(
-        "UPDATE rides SET status = 'accepted' WHERE id = ?",
-        (ride_id,)
+        "UPDATE rides SET status = 'accepted', driver_id = ? WHERE id = ?",
+        (driver["driver_id"], ride_id),
     )
     conn.commit()
     conn.close()
 
     flash(f"Ride #{ride_id} accepted successfully.")
     return redirect(url_for("driver_dashboard"))
+
 
 
 
@@ -791,11 +1036,7 @@ def driver_reject_ride(ride_id):
         flash("Ride is no longer available.")
         return redirect(url_for("driver_dashboard"))
 
-    # Mark as rejected
-    cursor.execute(
-        "UPDATE rides SET status = 'rejected' WHERE id = ?",
-        (ride_id,)
-    )
+    cursor.execute("UPDATE rides SET status = 'cancelled' WHERE id = ?", (ride_id,))
     conn.commit()
     conn.close()
 
@@ -803,9 +1044,134 @@ def driver_reject_ride(ride_id):
     return redirect(url_for("driver_dashboard"))
 
 
+@app.route("/driver/rides/<int:ride_id>/cancel", methods=["POST"])
+def driver_cancel_ride(ride_id):
+    if "user_id" not in session or session.get("role") != "driver":
+        flash("Please log in as a driver.")
+        return redirect(url_for("passenger_login_page"))
+
+    driver = get_current_driver()
+    if driver is None:
+        flash("Driver profile not found.")
+        return redirect(url_for("driver_dashboard"))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT status
+        FROM rides
+        WHERE id = ? AND driver_id = ?
+        """,
+        (ride_id, driver["driver_id"]),
+    )
+    ride = cursor.fetchone()
+
+    if not ride:
+        conn.close()
+        flash("Ride not found or not assigned to you.")
+        return redirect(url_for("driver_dashboard"))
+
+    if ride["status"] not in ("accepted", "picked_up"):
+        conn.close()
+        flash("Ride is no longer active.")
+        return redirect(url_for("driver_dashboard"))
+
+    cursor.execute("UPDATE rides SET status = 'cancelled' WHERE id = ?", (ride_id,))
+    conn.commit()
+    conn.close()
+
+    flash(f"Ride #{ride_id} has been cancelled.")
+    return redirect(url_for("driver_dashboard"))
+
+
+@app.route("/driver/rides/<int:ride_id>/picked-up", methods=["POST"])
+def driver_picked_up(ride_id):
+    if "user_id" not in session or session.get("role") != "driver":
+        flash("Please log in as a driver.")
+        return redirect(url_for("passenger_login_page"))
+
+    driver = get_current_driver()
+    if driver is None:
+        flash("Driver profile not found.")
+        return redirect(url_for("driver_dashboard"))
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT status
+        FROM rides
+        WHERE id = ? AND driver_id = ?
+        """,
+        (ride_id, driver["driver_id"]),
+    )
+    ride = cursor.fetchone()
+
+    if not ride:
+        conn.close()
+        flash("Ride not found or not assigned to you.")
+        return redirect(url_for("driver_dashboard"))
+
+    if ride["status"] != "accepted":
+        conn.close()
+        flash("Ride is not in 'accepted' state.")
+        return redirect(url_for("driver_dashboard"))
+
+    cursor.execute("UPDATE rides SET status = 'picked_up' WHERE id = ?", (ride_id,))
+    conn.commit()
+    conn.close()
+
+    flash(f"Ride #{ride_id} marked as picked up.")
+    return redirect(url_for("driver_dashboard"))
+
+
+@app.route("/driver/rides/<int:ride_id>/complete", methods=["POST"])
+def driver_complete_ride(ride_id):
+    if "user_id" not in session or session.get("role") != "driver":
+        flash("Please log in as a driver.")
+        return redirect(url_for("passenger_login_page"))
+
+    driver = get_current_driver()
+    if driver is None:
+        flash("Driver profile not found.")
+        return redirect(url_for("driver_dashboard"))
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT status
+        FROM rides
+        WHERE id = ? AND driver_id = ?
+        """,
+        (ride_id, driver["driver_id"]),
+    )
+    ride = cursor.fetchone()
+
+    if not ride:
+        conn.close()
+        flash("Ride not found or not assigned to you.")
+        return redirect(url_for("driver_dashboard"))
+
+    if ride["status"] not in ("accepted", "picked_up"):
+        conn.close()
+        flash("Ride is not active.")
+        return redirect(url_for("driver_dashboard"))
+
+    cursor.execute("UPDATE rides SET status = 'completed' WHERE id = ?", (ride_id,))
+    conn.commit()
+    conn.close()
+
+    flash(f"Ride #{ride_id} marked as completed.")
+    return redirect(url_for("driver_dashboard"))
+
+
 @app.route("/driver/requests", methods=["GET"])
 def driver_requests():
     return redirect(url_for("driver_dashboard"))
+
 
 
 # ===============================

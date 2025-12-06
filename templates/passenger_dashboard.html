@@ -109,11 +109,41 @@
 
     <div class="recent-trips">
         <h3 class="section-title">Recent trips</h3>
-        <div class="empty-state">
-            <div class="empty-icon">🚗</div>
-            <p class="empty-text">No recent trips yet</p>
-            <p class="empty-subtext">Your ride history will appear here</p>
-        </div>
+
+        {% if recent_rides and recent_rides|length > 0 %}
+            <div class="trip-list">
+                {% for r in recent_rides %}
+                    <div class="trip-item">
+                        <div class="trip-main">
+                            <div class="trip-route">
+                                <div class="trip-status-badge {{ 'completed' if r.status == 'completed' else 'cancelled' }}">
+                                    {{ r.status|capitalize }}
+                                </div>
+                                <div class="trip-addresses">
+                                    <div class="trip-pickup">{{ r.pickup_address }}</div>
+                                    <div class="trip-arrow">→</div>
+                                    <div class="trip-dropoff">{{ r.dropoff_address }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="trip-meta">
+                            {% if r.driver_name %}
+                                <span class="trip-driver">Driver: {{ r.driver_name }}</span>
+                            {% endif %}
+                            {% if r.created_at %}
+                                <span class="trip-time">On: {{ r.created_at }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🚗</div>
+                <p class="empty-text">No recent trips yet</p>
+                <p class="empty-subtext">Your ride history will appear here</p>
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
