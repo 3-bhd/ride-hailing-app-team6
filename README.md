@@ -1,6 +1,6 @@
 # RIDE-HAILING-APP-TEAM6
 
-Minimal Flask web app for Sprint 1 (User Stories 1, 4, 5).
+Minimal Flask web app for Sprint 1 (User Stories 1, 4, 5) and Sprint 2 (User Stories 2, 3, 6).
 
 ## Setup
 
