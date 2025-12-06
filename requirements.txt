@@ -1,2 +1,5 @@
 Flask
-Werkzeug
+gunicorn
+python-dotenv
+werkzeug
+requests
